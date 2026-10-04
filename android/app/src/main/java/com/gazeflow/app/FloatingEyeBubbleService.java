@@ -67,27 +67,29 @@ public class FloatingEyeBubbleService extends Service {
     private Handler cameraHandler;
     private String frontCameraId = null;
 
-    // Strict Mode & Orientation Settings
+    // User-tunable parameters (Loaded dynamically from SharedPreferences)
     private String controlMode = "head"; // "head", "hand", "eye"
     private String deviceOrientation = "landscape"; // "landscape", "portrait"
-    private float headThreshold = 26.0f;
-    private long gestureCooldownMs = 900;
+    private boolean invertDirection = false;
+    private int sensitivityLevel = 6; // 1 to 10
+    private long cooldownMs = 800; // 400ms to 2000ms
+    private int palmHoldThreshold = 3; // frames (150ms to 600ms)
     private boolean audioChimesEnabled = true;
 
-    // Head / Eye tracking state
+    // Head tracking state
     private float baselineFaceX = -1;
     private float baselineFaceY = -1;
     private long lastHeadTriggerTime = 0;
     private boolean isHeadReturnDebouncing = false;
 
-    // Hand tracking state (Background async with throttle)
+    // Hand tracking state (Adaptive normalized optical flow)
     private boolean isProcessingHandFrame = false;
-    private long lastFrameTime = 0;
+    private long lastFrameProcessTime = 0;
     private int[] prevLuma = null;
-    private int fingerFlickState = 0; // 0: Idle, 1: Rising (2-3 fingers), 2: Falling
-    private long flickStateStartTime = 0;
+    private float prevCentroidY = -1;
+    private long centroidStartTime = 0;
+    private int palmSteadyFrames = 0;
     private long lastHandTriggerTime = 0;
-    private int palmHoldFrames = 0;
 
     // Touch variables
     private int initialX;
@@ -200,9 +202,9 @@ public class FloatingEyeBubbleService extends Service {
 
             windowManager.addView(floatingBubbleView, params);
 
-            String modeName = "head".equals(controlMode) ? "👤 Head Nodding" :
-                             ("hand".equals(controlMode) ? "✋ 2-3 Finger Scroll & Palm Pause" : "👁️ Eye Gaze");
-            Toast.makeText(this, "Active Mode: " + modeName, Toast.LENGTH_SHORT).show();
+            String modeName = "head".equals(controlMode) ? "👤 Head (Hardware Face)" :
+                             ("hand".equals(controlMode) ? "✋ Hand & Palm" : "👁️ Eye");
+            Toast.makeText(this, "GazeFlow Active: " + modeName, Toast.LENGTH_SHORT).show();
 
         } catch (Exception e) {
             Log.e(TAG, "Error initializing floating bubble", e);
@@ -214,16 +216,19 @@ public class FloatingEyeBubbleService extends Service {
         SharedPreferences prefs = getSharedPreferences(MainActivity.PREFS_NAME, Context.MODE_PRIVATE);
         controlMode = prefs.getString("control_mode", "head");
         deviceOrientation = prefs.getString("device_orientation", "landscape");
-        int sensitivity = prefs.getInt("sensitivity_level", 3);
+        invertDirection = prefs.getBoolean("invert_direction", false);
 
-        headThreshold = Math.max(16.0f, 48.0f - (sensitivity * 7.0f));
+        sensitivityLevel = prefs.getInt("sensitivity_level", 6); // 1 to 10
+        cooldownMs = prefs.getInt("cooldown_ms", 800); // 400 to 2000
+        palmHoldThreshold = prefs.getInt("palm_hold_frames", 3); // 2 to 6
         audioChimesEnabled = prefs.getBoolean("audio_chimes", true);
 
+        // Reset trackers
         baselineFaceX = -1;
         baselineFaceY = -1;
         prevLuma = null;
-        fingerFlickState = 0;
-        palmHoldFrames = 0;
+        prevCentroidY = -1;
+        palmSteadyFrames = 0;
         isProcessingHandFrame = false;
     }
 
@@ -257,14 +262,13 @@ public class FloatingEyeBubbleService extends Service {
                 if (!"hand".equals(controlMode)) return;
 
                 long now = System.currentTimeMillis();
-                // 15 FPS throttle (every 66ms) - completely eliminates UI thread lag & battery drain!
-                if (now - lastFrameTime < 66 || isProcessingHandFrame) {
+                // 15 FPS throttle (66ms) - keeps CPU cool and prevents freezing
+                if (now - lastFrameProcessTime < 66 || isProcessingHandFrame) {
                     return;
                 }
-                lastFrameTime = now;
+                lastFrameProcessTime = now;
                 isProcessingHandFrame = true;
 
-                // Grab a lightweight 16x16 thumbnail without blocking the main UI thread
                 Bitmap bitmap = cameraTextureView.getBitmap(16, 16);
                 if (bitmap == null) {
                     isProcessingHandFrame = false;
@@ -274,7 +278,7 @@ public class FloatingEyeBubbleService extends Service {
                 if (cameraHandler != null) {
                     cameraHandler.post(() -> {
                         try {
-                            processFingersAndPalmAsync(bitmap);
+                            processAdaptiveHandAsync(bitmap);
                         } finally {
                             bitmap.recycle();
                             isProcessingHandFrame = false;
@@ -371,8 +375,9 @@ public class FloatingEyeBubbleService extends Service {
                         cameraCaptureSession.setRepeatingRequest(previewRequestBuilder.build(), new CameraCaptureSession.CaptureCallback() {
                             @Override
                             public void onCaptureCompleted(@NonNull CameraCaptureSession session, @NonNull CaptureRequest request, @NonNull TotalCaptureResult result) {
+                                // STRICT MODE ISOLATION: NEVER run head tracking if user chose Hand mode!
                                 if ("head".equals(controlMode) || "eye".equals(controlMode)) {
-                                    processHeadGesturePrecise(result);
+                                    processHeadGestureHardware(result);
                                 }
                             }
                         }, cameraHandler);
@@ -393,9 +398,10 @@ public class FloatingEyeBubbleService extends Service {
     }
 
     /**
-     * Head Gesture Processing with Rebound-Lockout Debounce
+     * Hardware ISP Face & Head Pitch Tracker
+     * Extremely reliable because Android's hardware camera chip does the face detection!
      */
-    private void processHeadGesturePrecise(TotalCaptureResult result) {
+    private void processHeadGestureHardware(TotalCaptureResult result) {
         Face[] faces = result.get(CaptureResult.STATISTICS_FACES);
         if (faces == null || faces.length == 0) return;
 
@@ -410,6 +416,7 @@ public class FloatingEyeBubbleService extends Service {
             return;
         }
 
+        // Adaptive baseline
         baselineFaceX = baselineFaceX * 0.92f + currentX * 0.08f;
         baselineFaceY = baselineFaceY * 0.92f + currentY * 0.08f;
 
@@ -420,25 +427,33 @@ public class FloatingEyeBubbleService extends Service {
             delta = baselineFaceY - currentY;
         }
 
+        // Apply Invert Direction setting if user flipped it
+        if (invertDirection) {
+            delta = -delta;
+        }
+
+        // Granular sensitivity mapping: Level 1 (50px) to Level 10 (12px)
+        float threshold = Math.max(12.0f, 54.0f - (sensitivityLevel * 4.2f));
+
         long currentTime = System.currentTimeMillis();
 
         if (isHeadReturnDebouncing) {
-            if (currentTime - lastHeadTriggerTime > 800) {
+            if (currentTime - lastHeadTriggerTime > (cooldownMs * 0.85f)) {
                 isHeadReturnDebouncing = false;
             }
             return;
         }
 
-        if (currentTime - lastHeadTriggerTime < gestureCooldownMs) return;
+        if (currentTime - lastHeadTriggerTime < cooldownMs) return;
 
-        if (delta > headThreshold) {
+        if (delta > threshold) {
             lastHeadTriggerTime = currentTime;
             isHeadReturnDebouncing = true;
             new Handler(Looper.getMainLooper()).post(() -> {
                 flashBubble(1);
                 triggerScroll(true, "Head Nod UP");
             });
-        } else if (delta < -headThreshold && "head".equals(controlMode)) {
+        } else if (delta < -threshold && "head".equals(controlMode)) {
             lastHeadTriggerTime = currentTime;
             isHeadReturnDebouncing = true;
             new Handler(Looper.getMainLooper()).post(() -> {
@@ -449,26 +464,25 @@ public class FloatingEyeBubbleService extends Service {
     }
 
     /**
-     * Precise Async Gesture Engine:
-     * A. PALM WITH ALL 5 FINGERS: Wide spread (left, center, right, top, bottom), covers > 50% of the frame.
-     *    Holding it steady for ~300ms triggers PAUSE / PLAY.
-     * B. 2-3 FINGERS UPWARD / DOWNWARD: Focused vertical band (< 40% width).
-     *    Flicking upward triggers NEXT SHORT.
-     *    Flicking downward triggers PREVIOUS SHORT.
+     * Adaptive Normalized Hand & Palm Engine
+     * Works in any room lighting by normalizing pixel difference against ambient levels!
      */
-    private void processFingersAndPalmAsync(Bitmap bitmap) {
+    private void processAdaptiveHandAsync(Bitmap bitmap) {
         long currentTime = System.currentTimeMillis();
-        if (currentTime - lastHandTriggerTime < 950) {
-            return; // 0.95s debounce prevents accidental double-triggers
+        if (currentTime - lastHandTriggerTime < cooldownMs) {
+            return;
         }
 
         int[] pixels = new int[256];
         bitmap.getPixels(pixels, 0, 16, 0, 0, 16, 16);
 
         int[] currentLuma = new int[256];
+        int ambientSum = 0;
         for (int i = 0; i < 256; i++) {
             int c = pixels[i];
-            currentLuma[i] = (Color.red(c) * 77 + Color.green(c) * 150 + Color.blue(c) * 29) >> 8;
+            int luma = (Color.red(c) * 77 + Color.green(c) * 150 + Color.blue(c) * 29) >> 8;
+            currentLuma[i] = luma;
+            ambientSum += luma;
         }
 
         if (prevLuma == null) {
@@ -476,121 +490,104 @@ public class FloatingEyeBubbleService extends Service {
             return;
         }
 
-        float motionTop = 0;
-        float motionMid = 0;
-        float motionBottom = 0;
+        // Adaptive noise floor based on ambient brightness
+        int ambientAvg = ambientSum / 256;
+        int noiseFloor = Math.max(12, ambientAvg / 14);
 
-        // Measure horizontal spread across Left (cols 0-4), Center (5-10), and Right (11-15)
-        float motionLeft = 0;
-        float motionCenter = 0;
-        float motionRight = 0;
+        float weightedYSum = 0;
+        float totalDiff = 0;
+        int activePixels = 0;
 
-        int activePixelCount = 0;
+        float leftMotion = 0;
+        float centerMotion = 0;
+        float rightMotion = 0;
 
         for (int y = 0; y < 16; y++) {
             for (int x = 0; x < 16; x++) {
                 int diff = Math.abs(currentLuma[y * 16 + x] - prevLuma[y * 16 + x]);
-                if (diff > 16) {
-                    activePixelCount++;
-                    // Vertical zones
-                    if (y < 5) motionTop += diff;
-                    else if (y < 11) motionMid += diff;
-                    else motionBottom += diff;
+                if (diff > noiseFloor) {
+                    activePixels++;
+                    totalDiff += diff;
+                    weightedYSum += (y * diff);
 
-                    // Horizontal zones
-                    if (x < 5) motionLeft += diff;
-                    else if (x < 11) motionCenter += diff;
-                    else motionRight += diff;
+                    if (x < 5) leftMotion += diff;
+                    else if (x < 11) centerMotion += diff;
+                    else rightMotion += diff;
                 }
             }
         }
         prevLuma = currentLuma;
 
-        float totalMotion = motionTop + motionMid + motionBottom;
+        // Dynamic sensitivity scaling from Level 1 to 10
+        float minEnergyRequired = Math.max(150.0f, 400.0f - (sensitivityLevel * 25.0f));
 
-        // --- GESTURE 1: 5-FINGER OPEN PALM TO PAUSE ---
-        // Wide spread across ALL columns (left, center, right) and rows (top, mid, bottom) with large area
-        boolean isWideSpread = (motionLeft > 70 && motionCenter > 100 && motionRight > 70);
-        boolean isFullVertical = (motionTop > 70 && motionMid > 100 && motionBottom > 70);
-        boolean isPalmPresence = isWideSpread && isFullVertical && (activePixelCount > 85);
+        if (totalDiff < minEnergyRequired) {
+            if (currentTime - centroidStartTime > 450) {
+                prevCentroidY = -1;
+            }
+            palmSteadyFrames = Math.max(0, palmSteadyFrames - 1);
+            return;
+        }
 
-        if (isPalmPresence) {
-            palmHoldFrames++;
-            if (palmHoldFrames >= 3) { // Held steady for ~200-300ms
-                palmHoldFrames = 0;
-                fingerFlickState = 0;
+        // --- 1. OPEN PALM DETECTION (Wide coverage + Steady dwell) ---
+        boolean isWide = (leftMotion > 50 && centerMotion > 80 && rightMotion > 50);
+        if (isWide && activePixels > 70) {
+            palmSteadyFrames++;
+            if (palmSteadyFrames >= palmHoldThreshold) {
+                palmSteadyFrames = 0;
+                prevCentroidY = -1;
                 lastHandTriggerTime = currentTime;
                 new Handler(Looper.getMainLooper()).post(() -> {
-                    flashBubble(3); // Purple for Pause/Play
+                    flashBubble(3); // Purple
                     triggerPlayPause();
                 });
                 return;
             }
         } else {
-            palmHoldFrames = Math.max(0, palmHoldFrames - 1);
+            palmSteadyFrames = Math.max(0, palmSteadyFrames - 1);
         }
 
-        // --- GESTURE 2: 2-3 FINGERS UPWARD / DOWNWARD FOR SCROLL ---
-        // 2-3 fingers are compact (focused width, NOT spread across both sides like a palm)
-        if (totalMotion < 250) {
-            if (currentTime - flickStateStartTime > 550) {
-                fingerFlickState = 0;
+        // --- 2. TRAJECTORY FLICK UP / DOWN ---
+        float currentCentroidY = (weightedYSum / totalDiff) / 15.0f; // Normalized 0.0 (top) to 1.0 (bottom)
+
+        if (prevCentroidY < 0) {
+            prevCentroidY = currentCentroidY;
+            centroidStartTime = currentTime;
+            return;
+        }
+
+        float deltaCentroidY = prevCentroidY - currentCentroidY; // Positive = Moving UP, Negative = Moving DOWN
+        long duration = currentTime - centroidStartTime;
+
+        if (duration > 500) {
+            prevCentroidY = currentCentroidY;
+            centroidStartTime = currentTime;
+            return;
+        }
+
+        float flickThreshold = Math.max(0.18f, 0.40f - (sensitivityLevel * 0.022f));
+
+        if (Math.abs(deltaCentroidY) > flickThreshold && duration > 70) {
+            boolean isUpward = deltaCentroidY > 0;
+            if (invertDirection) {
+                isUpward = !isUpward;
             }
-            return;
-        }
 
-        // Must NOT be a wide 5-finger palm (if wide spread, ignore scroll to avoid mistaking palm for a scroll)
-        if (motionLeft > 180 && motionRight > 180 && activePixelCount > 90) {
-            return;
-        }
+            final boolean finalIsUpward = isUpward;
+            lastHandTriggerTime = currentTime;
+            prevCentroidY = -1;
 
-        switch (fingerFlickState) {
-            case 0: // Idle - waiting for 2-3 fingers to initiate flick
-                if (motionBottom > motionTop + 80 && motionBottom > 130) {
-                    // Fingers appeared in bottom zone -> Rising UP
-                    fingerFlickState = 1;
-                    flickStateStartTime = currentTime;
-                } else if (motionTop > motionBottom + 80 && motionTop > 130) {
-                    // Fingers appeared in top zone -> Falling DOWN
-                    fingerFlickState = 2;
-                    flickStateStartTime = currentTime;
-                }
-                break;
-
-            case 1: // Rising: Fingers moving UP towards top zone
-                if (currentTime - flickStateStartTime > 550) {
-                    fingerFlickState = 0;
-                } else if (motionTop > motionBottom + 100 && motionTop > 160) {
-                    // CONFIRMED: 2-3 fingers flicked UP!
-                    fingerFlickState = 0;
-                    lastHandTriggerTime = currentTime;
-                    new Handler(Looper.getMainLooper()).post(() -> {
-                        flashBubble(1); // Cyan for Next
-                        triggerScroll(true, "2-3 Fingers Flick UP");
-                    });
-                }
-                break;
-
-            case 2: // Falling: Fingers moving DOWN towards bottom zone
-                if (currentTime - flickStateStartTime > 550) {
-                    fingerFlickState = 0;
-                } else if (motionBottom > motionTop + 100 && motionBottom > 160) {
-                    // CONFIRMED: 2-3 fingers flicked DOWN!
-                    fingerFlickState = 0;
-                    lastHandTriggerTime = currentTime;
-                    new Handler(Looper.getMainLooper()).post(() -> {
-                        flashBubble(2); // Amber for Prev
-                        triggerScroll(false, "2-3 Fingers Flick DOWN");
-                    });
-                }
-                break;
+            new Handler(Looper.getMainLooper()).post(() -> {
+                flashBubble(finalIsUpward ? 1 : 2);
+                triggerScroll(finalIsUpward, finalIsUpward ? "Hand Flick UP" : "Hand Flick DOWN");
+            });
         }
     }
 
     private void triggerPlayPause() {
         if (GazeAccessibilityService.instance != null) {
             GazeAccessibilityService.instance.performTapPlayPause();
-            Toast.makeText(this, "✋ 5-Finger Palm -> Paused / Resumed!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "✋ Palm -> Paused / Resumed Video!", Toast.LENGTH_SHORT).show();
 
             if (audioChimesEnabled) {
                 playPauseChime();
@@ -674,7 +671,7 @@ public class FloatingEyeBubbleService extends Service {
 
             Notification notification = new NotificationCompat.Builder(this, "gazeflow_bubble_channel")
                     .setContentTitle("GazeFlow Gesture Tracking Active")
-                    .setContentText("2-3 Fingers=Scroll, 5-Finger Palm=Pause.")
+                    .setContentText("Hands-Free Video Scrolling Active")
                     .setSmallIcon(R.drawable.ic_bubble_eye)
                     .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop Tracker", stopPendingIntent)
                     .setPriority(NotificationCompat.PRIORITY_LOW)

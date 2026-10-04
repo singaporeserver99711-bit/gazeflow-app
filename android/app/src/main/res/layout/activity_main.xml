@@ -25,7 +25,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="GazeFlow"
+                android:text="GazeFlow Controller"
                 android:textColor="#FFFFFF"
                 android:textSize="26sp"
                 android:textStyle="bold" />
@@ -33,7 +33,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Hands-Free Head, Hand &amp; Eye Gesture Scrolling"
+                android:text="Universal Hands-Free Video Scrolling"
                 android:textColor="#10B981"
                 android:textSize="13sp"
                 android:layout_marginTop="2dp" />
@@ -125,101 +125,6 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- DEVICE HOLDING POSITION (Orientation Selector) -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/bg_dark_card"
-            android:padding="16dp"
-            android:layout_marginBottom="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="DEVICE HOLDING ORIENTATION"
-                android:textColor="#9CA3AF"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.08"
-                android:layout_marginBottom="4dp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Select how your tablet/phone is placed so video &amp; sensors rotate correctly"
-                android:textColor="#6B7280"
-                android:textSize="11sp"
-                android:layout_marginBottom="12dp" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:weightSum="2">
-
-                <LinearLayout
-                    android:id="@+id/card_orient_landscape"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:background="@drawable/bg_btn_active"
-                    android:padding="12dp"
-                    android:gravity="center"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:layout_marginEnd="6dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="🖥️ Landscape (Tablet)"
-                        android:textColor="#10B981"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Horizontal screen"
-                        android:textColor="#D1D5DB"
-                        android:textSize="10sp"
-                        android:layout_marginTop="2dp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/card_orient_portrait"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:background="@drawable/bg_btn_inactive"
-                    android:padding="12dp"
-                    android:gravity="center"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:layout_marginStart="6dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="📱 Portrait (Vertical)"
-                        android:textColor="#9CA3AF"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Camera at top"
-                        android:textColor="#9CA3AF"
-                        android:textSize="10sp"
-                        android:layout_marginTop="2dp" />
-                </LinearLayout>
-            </LinearLayout>
-        </LinearLayout>
-
         <!-- CONTROL MODE (Head Gesture vs Hand Gesture vs Eye Gaze) -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -242,7 +147,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Choose your preferred hands-free method"
+                android:text="Select hands-free method to customize"
                 android:textColor="#6B7280"
                 android:textSize="11sp"
                 android:layout_marginBottom="12dp" />
@@ -253,7 +158,7 @@
                 android:orientation="horizontal"
                 android:weightSum="3">
 
-                <!-- 1. Head Gesture Mode (Default & Most Reliable!) -->
+                <!-- Head Mode -->
                 <LinearLayout
                     android:id="@+id/card_mode_head"
                     android:layout_width="0dp"
@@ -278,14 +183,14 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Nod UP / DOWN\n(Recommended)"
+                        android:text="Nod UP / DOWN\n(Hardware Face)"
                         android:textColor="#D1D5DB"
                         android:textSize="9sp"
                         android:gravity="center"
                         android:layout_marginTop="2dp" />
                 </LinearLayout>
 
-                <!-- 2. Hand Gesture Mode -->
+                <!-- Hand Mode -->
                 <LinearLayout
                     android:id="@+id/card_mode_hand"
                     android:layout_width="0dp"
@@ -302,7 +207,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="✌️ Hand"
+                        android:text="✋ Hand"
                         android:textColor="#9CA3AF"
                         android:textSize="13sp"
                         android:textStyle="bold" />
@@ -310,14 +215,14 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="2-3 Fingers=Scroll\n5-Finger Palm=Pause"
+                        android:text="Wave=Scroll\nPalm=Pause"
                         android:textColor="#9CA3AF"
                         android:textSize="9sp"
                         android:gravity="center"
                         android:layout_marginTop="2dp" />
                 </LinearLayout>
 
-                <!-- 3. Eye Gaze Mode -->
+                <!-- Eye Mode -->
                 <LinearLayout
                     android:id="@+id/card_mode_eye"
                     android:layout_width="0dp"
@@ -351,7 +256,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Sensitivity Slider -->
+        <!-- DEVICE HOLDING ORIENTATION & CAMERA ROTATION -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -360,17 +265,138 @@
             android:padding="16dp"
             android:layout_marginBottom="16dp">
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="DEVICE &amp; CAMERA ORIENTATION"
+                android:textColor="#9CA3AF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08"
+                android:layout_marginBottom="8dp" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginBottom="8dp">
+                android:weightSum="2"
+                android:layout_marginBottom="12dp">
+
+                <LinearLayout
+                    android:id="@+id/card_orient_landscape"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_btn_active"
+                    android:padding="10dp"
+                    android:gravity="center"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_marginEnd="4dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🖥️ Landscape"
+                        android:textColor="#10B981"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tablet horizontal"
+                        android:textColor="#D1D5DB"
+                        android:textSize="10sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/card_orient_portrait"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_btn_inactive"
+                    android:padding="10dp"
+                    android:gravity="center"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_marginStart="4dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="📱 Portrait"
+                        android:textColor="#9CA3AF"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Vertical screen"
+                        android:textColor="#9CA3AF"
+                        android:textSize="10sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Invert Direction Switch (Universal Fix for Any Device/Camera) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="#27272A"
+                android:padding="10dp">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Gesture Sensitivity"
+                    android:text="🔄 Invert Scroll Direction\n(Reverse UP &amp; DOWN gestures)"
+                    android:textColor="#E5E7EB"
+                    android:textSize="12sp" />
+
+                <CheckBox
+                    android:id="@+id/cb_invert_direction"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="#10B981" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- SENSITIVITY CONTROLS SUITE -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_dark_card"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="FINE SENSITIVITY &amp; TIMING CONTROLS"
+                android:textColor="#9CA3AF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08"
+                android:layout_marginBottom="12dp" />
+
+            <!-- 1. Gesture Sensitivity (1 to 10) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="4dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Gesture Trigger Sensitivity"
                     android:textColor="#E5E7EB"
                     android:textSize="13sp"
                     android:textStyle="bold" />
@@ -379,7 +405,7 @@
                     android:id="@+id/tv_sensitivity_value"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Level 3 / 5"
+                    android:text="Level 6 / 10"
                     android:textColor="#10B981"
                     android:textSize="13sp"
                     android:textStyle="bold" />
@@ -389,8 +415,8 @@
                 android:id="@+id/seek_sensitivity"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:max="4"
-                android:progress="2"
+                android:max="9"
+                android:progress="5"
                 android:progressTint="#10B981"
                 android:thumbTint="#10B981" />
 
@@ -398,23 +424,137 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginTop="4dp">
+                android:layout_marginBottom="16dp">
 
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Gentle movement"
+                    android:text="1: Firm / Deliberate gesture"
                     android:textColor="#6B7280"
-                    android:textSize="11sp" />
+                    android:textSize="10sp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Subtle movement"
+                    android:text="10: Ultra light / Subtle"
                     android:textColor="#6B7280"
-                    android:textSize="11sp" />
+                    android:textSize="10sp" />
             </LinearLayout>
+
+            <!-- 2. Scroll Cooldown / Debounce Time -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="4dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Scroll Cooldown (Debounce)"
+                    android:textColor="#E5E7EB"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_cooldown_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="800ms"
+                    android:textColor="#10B981"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <SeekBar
+                android:id="@+id/seek_cooldown"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="16"
+                android:progress="6"
+                android:progressTint="#10B981"
+                android:thumbTint="#10B981" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="400ms: Rapid scrolling"
+                    android:textColor="#6B7280"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="2000ms: Relaxed watching"
+                    android:textColor="#6B7280"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
+            <!-- 3. Palm Pause Hold Duration -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="4dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Palm Pause Hold Duration"
+                    android:textColor="#E5E7EB"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_palm_hold_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="250ms"
+                    android:textColor="#10B981"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <SeekBar
+                android:id="@+id/seek_palm_hold"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="8"
+                android:progress="2"
+                android:progressTint="#10B981"
+                android:thumbTint="#10B981" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="150ms: Instant pause"
+                    android:textColor="#6B7280"
+                    android:textSize="10sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="600ms: Deliberate stop"
+                    android:textColor="#6B7280"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
         </LinearLayout>
 
         <!-- Audio Sound Chimes Toggle -->
@@ -425,13 +565,13 @@
             android:background="@drawable/bg_dark_card"
             android:padding="16dp"
             android:gravity="center_vertical"
-            android:layout_marginBottom="20dp">
+            android:layout_marginBottom="16dp">
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="🔔 Audio Sound Chimes on Scroll"
+                android:text="🔔 Audio Sound Feedback on Action"
                 android:textColor="#E5E7EB"
                 android:textSize="13sp" />
 
@@ -448,7 +588,7 @@
             android:id="@+id/btn_start_bubble"
             android:layout_width="match_parent"
             android:layout_height="52dp"
-            android:text="▶ Start Gesture Floating Bubble"
+            android:text="▶ Start Floating Gesture Controller"
             android:backgroundTint="#10B981"
             android:textColor="#000000"
             android:textSize="14sp"

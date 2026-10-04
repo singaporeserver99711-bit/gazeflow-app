@@ -31,20 +31,25 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvStatusAccessibility;
     private TextView tvStatusCamera;
 
-    // Orientation cards
+    // Orientation & Invert
     private LinearLayout cardOrientLandscape;
     private LinearLayout cardOrientPortrait;
+    private CheckBox cbInvertDirection;
 
     // Mode cards
     private LinearLayout cardModeHead;
     private LinearLayout cardModeHand;
     private LinearLayout cardModeEye;
 
-    // Sensitivity & Audio
+    // Granular Sensitivity Sliders
     private TextView tvSensitivityValue;
     private SeekBar seekSensitivity;
-    private CheckBox cbAudioChimes;
+    private TextView tvCooldownValue;
+    private SeekBar seekCooldown;
+    private TextView tvPalmHoldValue;
+    private SeekBar seekPalmHold;
 
+    private CheckBox cbAudioChimes;
     private SharedPreferences prefs;
 
     @Override
@@ -64,18 +69,24 @@ public class MainActivity extends AppCompatActivity {
         Button btnOverlay = findViewById(R.id.btn_grant_overlay);
         Button btnAccessibility = findViewById(R.id.btn_grant_accessibility);
 
-        // Orientation cards
+        // Orientation & Invert
         cardOrientLandscape = findViewById(R.id.card_orient_landscape);
         cardOrientPortrait = findViewById(R.id.card_orient_portrait);
+        cbInvertDirection = findViewById(R.id.cb_invert_direction);
 
         // Mode cards
         cardModeHead = findViewById(R.id.card_mode_head);
         cardModeHand = findViewById(R.id.card_mode_hand);
         cardModeEye = findViewById(R.id.card_mode_eye);
 
-        // Sensitivity & Chimes
+        // Sensitivity sliders
         tvSensitivityValue = findViewById(R.id.tv_sensitivity_value);
         seekSensitivity = findViewById(R.id.seek_sensitivity);
+        tvCooldownValue = findViewById(R.id.tv_cooldown_value);
+        seekCooldown = findViewById(R.id.seek_cooldown);
+        tvPalmHoldValue = findViewById(R.id.tv_palm_hold_value);
+        seekPalmHold = findViewById(R.id.seek_palm_hold);
+
         cbAudioChimes = findViewById(R.id.cb_audio_chimes);
 
         // Actions
@@ -83,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
         Button btnTestGesture = findViewById(R.id.btn_test_gesture);
         Button btnStopBubble = findViewById(R.id.btn_stop_bubble);
 
-        // Load saved orientation (Default to Landscape for tablets)
+        // 1. Orientation
         String savedOrientation = prefs.getString("device_orientation", "landscape");
         setOrientationUi("landscape".equals(savedOrientation));
 
@@ -91,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
             setOrientationUi(true);
             prefs.edit().putString("device_orientation", "landscape").apply();
             syncSettingsToService();
-            Toast.makeText(this, "Landscape Tablet Mode (Camera rotated upright)", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Landscape Tablet Mode selected", Toast.LENGTH_SHORT).show();
         });
 
         cardOrientPortrait.setOnClickListener(v -> {
@@ -101,7 +112,16 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Portrait Vertical Mode selected", Toast.LENGTH_SHORT).show();
         });
 
-        // Load saved control mode (Default to Head Gesture)
+        // 2. Invert Direction
+        boolean inverted = prefs.getBoolean("invert_direction", false);
+        cbInvertDirection.setChecked(inverted);
+        cbInvertDirection.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            prefs.edit().putBoolean("invert_direction", isChecked).apply();
+            syncSettingsToService();
+            Toast.makeText(this, isChecked ? "Scroll Direction Inverted" : "Normal Direction", Toast.LENGTH_SHORT).show();
+        });
+
+        // 3. Control Mode
         String savedMode = prefs.getString("control_mode", "head");
         setModeUi(savedMode);
 
@@ -109,33 +129,33 @@ public class MainActivity extends AppCompatActivity {
             setModeUi("head");
             prefs.edit().putString("control_mode", "head").apply();
             syncSettingsToService();
-            Toast.makeText(this, "Mode: 👤 Head Nod (Nod UP for Next, DOWN for Prev)", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Mode: 👤 Head Nod (Hardware Face ISP)", Toast.LENGTH_SHORT).show();
         });
 
         cardModeHand.setOnClickListener(v -> {
             setModeUi("hand");
             prefs.edit().putString("control_mode", "hand").apply();
             syncSettingsToService();
-            Toast.makeText(this, "Mode: ✌️ Hand (2-3 Fingers=Scroll, 5-Finger Palm=Pause)", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Mode: ✋ Hand (Wave to Scroll, Palm to Pause)", Toast.LENGTH_SHORT).show();
         });
 
         cardModeEye.setOnClickListener(v -> {
             setModeUi("eye");
             prefs.edit().putString("control_mode", "eye").apply();
             syncSettingsToService();
-            Toast.makeText(this, "Mode: 👁️ Eye Gaze (Glance UP to scroll)", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Mode: 👁️ Eye Gaze", Toast.LENGTH_SHORT).show();
         });
 
-        // Sensitivity
-        int sensitivity = prefs.getInt("sensitivity_level", 3);
+        // 4. Sensitivity (1 to 10)
+        int sensitivity = prefs.getInt("sensitivity_level", 6);
         seekSensitivity.setProgress(sensitivity - 1);
-        tvSensitivityValue.setText("Level " + sensitivity + " / 5");
+        tvSensitivityValue.setText("Level " + sensitivity + " / 10");
 
         seekSensitivity.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 int level = progress + 1;
-                tvSensitivityValue.setText("Level " + level + " / 5");
+                tvSensitivityValue.setText("Level " + level + " / 10");
                 prefs.edit().putInt("sensitivity_level", level).apply();
                 syncSettingsToService();
             }
@@ -143,7 +163,42 @@ public class MainActivity extends AppCompatActivity {
             @Override public void onStopTrackingTouch(SeekBar seekBar) {}
         });
 
-        // Audio chimes
+        // 5. Cooldown (400ms to 2000ms)
+        int cooldown = prefs.getInt("cooldown_ms", 800);
+        int cooldownProgress = Math.max(0, (cooldown - 400) / 100);
+        seekCooldown.setProgress(cooldownProgress);
+        tvCooldownValue.setText(cooldown + "ms");
+
+        seekCooldown.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                int ms = 400 + (progress * 100);
+                tvCooldownValue.setText(ms + "ms");
+                prefs.edit().putInt("cooldown_ms", ms).apply();
+                syncSettingsToService();
+            }
+            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        // 6. Palm Hold Duration (150ms to 600ms)
+        int palmFrames = prefs.getInt("palm_hold_frames", 3);
+        seekPalmHold.setProgress(palmFrames - 1);
+        tvPalmHoldValue.setText((palmFrames * 80) + "ms");
+
+        seekPalmHold.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                int frames = progress + 1;
+                tvPalmHoldValue.setText((frames * 80) + "ms");
+                prefs.edit().putInt("palm_hold_frames", frames).apply();
+                syncSettingsToService();
+            }
+            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        // 7. Audio Chimes
         boolean chimesEnabled = prefs.getBoolean("audio_chimes", true);
         cbAudioChimes.setChecked(chimesEnabled);
         cbAudioChimes.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -208,7 +263,7 @@ public class MainActivity extends AppCompatActivity {
             try {
                 Intent serviceIntent = new Intent(this, FloatingEyeBubbleService.class);
                 startService(serviceIntent);
-                Toast.makeText(this, "Gesture Controller Started! Switch to YouTube Shorts now.", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Controller Started! Open YouTube Shorts now.", Toast.LENGTH_LONG).show();
             } catch (Exception e) {
                 Toast.makeText(this, "Failed to start bubble: " + e.getMessage(), Toast.LENGTH_LONG).show();
             }
@@ -218,7 +273,7 @@ public class MainActivity extends AppCompatActivity {
             Intent stopIntent = new Intent(this, FloatingEyeBubbleService.class);
             stopIntent.setAction(FloatingEyeBubbleService.ACTION_STOP);
             startService(stopIntent);
-            Toast.makeText(this, "Gesture Controller Stopped!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Controller Stopped!", Toast.LENGTH_SHORT).show();
         });
 
         // Request camera permission on launch if needed
