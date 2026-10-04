@@ -20,7 +20,7 @@
             android:orientation="vertical"
             android:gravity="center"
             android:layout_marginTop="8dp"
-            android:layout_marginBottom="18dp">
+            android:layout_marginBottom="16dp">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -33,9 +33,9 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Hands-Free Eye-Scroll Reels &amp; Shorts"
+                android:text="Hands-Free Head, Hand &amp; Eye Gesture Scrolling"
                 android:textColor="#10B981"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:layout_marginTop="2dp" />
         </LinearLayout>
 
@@ -85,7 +85,6 @@
                 android:textSize="13sp"
                 android:layout_marginBottom="12dp" />
 
-            <!-- Permission Action Bar -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -126,7 +125,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Scroll Trigger Eye Movement (Look Up vs Look Down) -->
+        <!-- DEVICE HOLDING POSITION (Orientation Selector) -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -138,11 +137,19 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="SCROLL TRIGGER EYE MOVEMENT"
+                android:text="DEVICE HOLDING ORIENTATION"
                 android:textColor="#9CA3AF"
                 android:textSize="11sp"
                 android:textStyle="bold"
                 android:letterSpacing="0.08"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Select how your tablet/phone is placed so video &amp; sensors rotate correctly"
+                android:textColor="#6B7280"
+                android:textSize="11sp"
                 android:layout_marginBottom="12dp" />
 
             <LinearLayout
@@ -152,7 +159,7 @@
                 android:weightSum="2">
 
                 <LinearLayout
-                    android:id="@+id/card_trigger_up"
+                    android:id="@+id/card_orient_landscape"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -167,22 +174,22 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="⬆ Look Up"
+                        android:text="🖥️ Landscape (Tablet)"
                         android:textColor="#10B981"
-                        android:textSize="14sp"
+                        android:textSize="13sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Scroll to Next (Default)"
+                        android:text="Horizontal screen"
                         android:textColor="#D1D5DB"
                         android:textSize="10sp"
                         android:layout_marginTop="2dp" />
                 </LinearLayout>
 
                 <LinearLayout
-                    android:id="@+id/card_trigger_down"
+                    android:id="@+id/card_orient_portrait"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -197,15 +204,15 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="⬇ Look Down"
+                        android:text="📱 Portrait (Vertical)"
                         android:textColor="#9CA3AF"
-                        android:textSize="14sp"
+                        android:textSize="13sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Scroll to Next"
+                        android:text="Camera at top"
                         android:textColor="#9CA3AF"
                         android:textSize="10sp"
                         android:layout_marginTop="2dp" />
@@ -213,7 +220,138 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Eye Gaze Sensitivity Slider -->
+        <!-- CONTROL MODE (Head Gesture vs Hand Gesture vs Eye Gaze) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_dark_card"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="GESTURE CONTROL MODE"
+                android:textColor="#9CA3AF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Choose your preferred hands-free method"
+                android:textColor="#6B7280"
+                android:textSize="11sp"
+                android:layout_marginBottom="12dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:weightSum="3">
+
+                <!-- 1. Head Gesture Mode (Default & Most Reliable!) -->
+                <LinearLayout
+                    android:id="@+id/card_mode_head"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_btn_active"
+                    android:padding="10dp"
+                    android:gravity="center"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_marginEnd="4dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="👤 Head"
+                        android:textColor="#10B981"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Nod UP / DOWN\n(Recommended)"
+                        android:textColor="#D1D5DB"
+                        android:textSize="9sp"
+                        android:gravity="center"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+
+                <!-- 2. Hand Gesture Mode -->
+                <LinearLayout
+                    android:id="@+id/card_mode_hand"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_btn_inactive"
+                    android:padding="10dp"
+                    android:gravity="center"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_marginHorizontal="2dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="✋ Hand"
+                        android:textColor="#9CA3AF"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Fingers UP=Next\nDOWN=Prev"
+                        android:textColor="#9CA3AF"
+                        android:textSize="9sp"
+                        android:gravity="center"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+
+                <!-- 3. Eye Gaze Mode -->
+                <LinearLayout
+                    android:id="@+id/card_mode_eye"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_btn_inactive"
+                    android:padding="10dp"
+                    android:gravity="center"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_marginStart="4dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="👁️ Eye"
+                        android:textColor="#9CA3AF"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Glance UP\n(Direct Eye)"
+                        android:textColor="#9CA3AF"
+                        android:textSize="9sp"
+                        android:gravity="center"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Sensitivity Slider -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -232,7 +370,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Eye Gaze Sensitivity"
+                    android:text="Gesture Sensitivity"
                     android:textColor="#E5E7EB"
                     android:textSize="13sp"
                     android:textStyle="bold" />
@@ -241,7 +379,7 @@
                     android:id="@+id/tv_sensitivity_value"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Level 2 / 5"
+                    android:text="Level 3 / 5"
                     android:textColor="#10B981"
                     android:textSize="13sp"
                     android:textStyle="bold" />
@@ -252,7 +390,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:max="4"
-                android:progress="1"
+                android:progress="2"
                 android:progressTint="#10B981"
                 android:thumbTint="#10B981" />
 
@@ -266,80 +404,14 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Gentle head tilt"
+                    android:text="Gentle movement"
                     android:textColor="#6B7280"
                     android:textSize="11sp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Subtle eye movement"
-                    android:textColor="#6B7280"
-                    android:textSize="11sp" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- Scroll Trigger Dwell Time Slider -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/bg_dark_card"
-            android:padding="16dp"
-            android:layout_marginBottom="16dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="8dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Scroll Trigger Dwell Time"
-                    android:textColor="#E5E7EB"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tv_dwell_value"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="550ms"
-                    android:textColor="#10B981"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <SeekBar
-                android:id="@+id/seek_dwell"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:max="700"
-                android:progress="250"
-                android:progressTint="#10B981"
-                android:thumbTint="#10B981" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="4dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Fast (300ms)"
-                    android:textColor="#6B7280"
-                    android:textSize="11sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Relaxed (1s)"
+                    android:text="Subtle movement"
                     android:textColor="#6B7280"
                     android:textSize="11sp" />
             </LinearLayout>
@@ -359,7 +431,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="🔔 Audio Sound Chimes on Scroll &amp; Pause"
+                android:text="🔔 Audio Sound Chimes on Scroll"
                 android:textColor="#E5E7EB"
                 android:textSize="13sp" />
 
@@ -371,12 +443,12 @@
                 android:buttonTint="#10B981" />
         </LinearLayout>
 
-        <!-- Action Buttons Matching Web Style -->
+        <!-- Action Buttons -->
         <Button
             android:id="@+id/btn_start_bubble"
             android:layout_width="match_parent"
             android:layout_height="52dp"
-            android:text="▶ Start Eye-Tracking Floating Bubble"
+            android:text="▶ Start Gesture Floating Bubble"
             android:backgroundTint="#10B981"
             android:textColor="#000000"
             android:textSize="14sp"

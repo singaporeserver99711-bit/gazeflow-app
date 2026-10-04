@@ -11,7 +11,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.LinearLayout;
@@ -32,12 +31,18 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvStatusAccessibility;
     private TextView tvStatusCamera;
 
-    private LinearLayout cardTriggerUp;
-    private LinearLayout cardTriggerDown;
+    // Orientation cards
+    private LinearLayout cardOrientLandscape;
+    private LinearLayout cardOrientPortrait;
+
+    // Mode cards
+    private LinearLayout cardModeHead;
+    private LinearLayout cardModeHand;
+    private LinearLayout cardModeEye;
+
+    // Sensitivity & Audio
     private TextView tvSensitivityValue;
     private SeekBar seekSensitivity;
-    private TextView tvDwellValue;
-    private SeekBar seekDwell;
     private CheckBox cbAudioChimes;
 
     private SharedPreferences prefs;
@@ -59,13 +64,18 @@ public class MainActivity extends AppCompatActivity {
         Button btnOverlay = findViewById(R.id.btn_grant_overlay);
         Button btnAccessibility = findViewById(R.id.btn_grant_accessibility);
 
-        // Settings views
-        cardTriggerUp = findViewById(R.id.card_trigger_up);
-        cardTriggerDown = findViewById(R.id.card_trigger_down);
+        // Orientation cards
+        cardOrientLandscape = findViewById(R.id.card_orient_landscape);
+        cardOrientPortrait = findViewById(R.id.card_orient_portrait);
+
+        // Mode cards
+        cardModeHead = findViewById(R.id.card_mode_head);
+        cardModeHand = findViewById(R.id.card_mode_hand);
+        cardModeEye = findViewById(R.id.card_mode_eye);
+
+        // Sensitivity & Chimes
         tvSensitivityValue = findViewById(R.id.tv_sensitivity_value);
         seekSensitivity = findViewById(R.id.seek_sensitivity);
-        tvDwellValue = findViewById(R.id.tv_dwell_value);
-        seekDwell = findViewById(R.id.seek_dwell);
         cbAudioChimes = findViewById(R.id.cb_audio_chimes);
 
         // Actions
@@ -73,33 +83,49 @@ public class MainActivity extends AppCompatActivity {
         Button btnTestGesture = findViewById(R.id.btn_test_gesture);
         Button btnStopBubble = findViewById(R.id.btn_stop_bubble);
 
-        // Load saved preferences
-        String triggerMode = prefs.getString("trigger_direction", "look_up");
-        setTriggerModeUi("look_up".equals(triggerMode));
+        // Load saved orientation (Default to Landscape for tablets)
+        String savedOrientation = prefs.getString("device_orientation", "landscape");
+        setOrientationUi("landscape".equals(savedOrientation));
 
-        int sensitivity = prefs.getInt("sensitivity_level", 2); // 1 to 5
+        cardOrientLandscape.setOnClickListener(v -> {
+            setOrientationUi(true);
+            prefs.edit().putString("device_orientation", "landscape").apply();
+            Toast.makeText(this, "Landscape Tablet Mode selected (Camera rotated upright)", Toast.LENGTH_SHORT).show();
+        });
+
+        cardOrientPortrait.setOnClickListener(v -> {
+            setOrientationUi(false);
+            prefs.edit().putString("device_orientation", "portrait").apply();
+            Toast.makeText(this, "Portrait Vertical Mode selected", Toast.LENGTH_SHORT).show();
+        });
+
+        // Load saved control mode (Default to Head Gesture)
+        String savedMode = prefs.getString("control_mode", "head");
+        setModeUi(savedMode);
+
+        cardModeHead.setOnClickListener(v -> {
+            setModeUi("head");
+            prefs.edit().putString("control_mode", "head").apply();
+            Toast.makeText(this, "Head Gesture Active: Nod UP for Next, DOWN for Prev", Toast.LENGTH_SHORT).show();
+        });
+
+        cardModeHand.setOnClickListener(v -> {
+            setModeUi("hand");
+            prefs.edit().putString("control_mode", "hand").apply();
+            Toast.makeText(this, "Hand Gesture Active: Wave/Fingers UP for Next, DOWN for Prev", Toast.LENGTH_SHORT).show();
+        });
+
+        cardModeEye.setOnClickListener(v -> {
+            setModeUi("eye");
+            prefs.edit().putString("control_mode", "eye").apply();
+            Toast.makeText(this, "Eye Gaze Active: Glance UP to scroll", Toast.LENGTH_SHORT).show();
+        });
+
+        // Sensitivity
+        int sensitivity = prefs.getInt("sensitivity_level", 3); // 1 to 5
         seekSensitivity.setProgress(sensitivity - 1);
         tvSensitivityValue.setText("Level " + sensitivity + " / 5");
 
-        int dwellMs = prefs.getInt("dwell_ms", 550); // 300 to 1000
-        seekDwell.setProgress(dwellMs - 300);
-        tvDwellValue.setText(dwellMs + "ms");
-
-        boolean chimesEnabled = prefs.getBoolean("audio_chimes", true);
-        cbAudioChimes.setChecked(chimesEnabled);
-
-        // Trigger direction toggle
-        cardTriggerUp.setOnClickListener(v -> {
-            setTriggerModeUi(true);
-            prefs.edit().putString("trigger_direction", "look_up").apply();
-        });
-
-        cardTriggerDown.setOnClickListener(v -> {
-            setTriggerModeUi(false);
-            prefs.edit().putString("trigger_direction", "look_down").apply();
-        });
-
-        // Sensitivity slider
         seekSensitivity.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -111,19 +137,9 @@ public class MainActivity extends AppCompatActivity {
             @Override public void onStopTrackingTouch(SeekBar seekBar) {}
         });
 
-        // Dwell time slider
-        seekDwell.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                int dwell = 300 + progress;
-                tvDwellValue.setText(dwell + "ms");
-                prefs.edit().putInt("dwell_ms", dwell).apply();
-            }
-            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
-            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
-        });
-
-        // Audio chimes checkbox
+        // Audio chimes
+        boolean chimesEnabled = prefs.getBoolean("audio_chimes", true);
+        cbAudioChimes.setChecked(chimesEnabled);
         cbAudioChimes.setOnCheckedChangeListener((buttonView, isChecked) -> {
             prefs.edit().putBoolean("audio_chimes", isChecked).apply();
         });
@@ -133,7 +149,7 @@ public class MainActivity extends AppCompatActivity {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_CODE);
             } else {
-                Toast.makeText(this, "Front camera permission already granted!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Camera permission already granted!", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -169,11 +185,11 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Start floating eye bubble
+        // Start floating bubble
         btnStartBubble.setOnClickListener(v -> {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_CODE);
-                Toast.makeText(this, "Camera permission needed for eye tracking!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Camera permission needed for gesture tracking!", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -185,9 +201,9 @@ public class MainActivity extends AppCompatActivity {
             try {
                 Intent serviceIntent = new Intent(this, FloatingEyeBubbleService.class);
                 startService(serviceIntent);
-                Toast.makeText(this, "Eye Tracker Active! Switch to YouTube Shorts now.", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Gesture Controller Started! Switch to YouTube Shorts now.", Toast.LENGTH_LONG).show();
             } catch (Exception e) {
-                Toast.makeText(this, "Failed to start eye tracker: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Failed to start bubble: " + e.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
 
@@ -195,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
             Intent stopIntent = new Intent(this, FloatingEyeBubbleService.class);
             stopIntent.setAction(FloatingEyeBubbleService.ACTION_STOP);
             startService(stopIntent);
-            Toast.makeText(this, "Eye Tracker Stopped!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Gesture Controller Stopped!", Toast.LENGTH_SHORT).show();
         });
 
         // Request camera permission on launch if needed
@@ -204,14 +220,20 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void setTriggerModeUi(boolean isLookUp) {
-        if (isLookUp) {
-            cardTriggerUp.setBackgroundResource(R.drawable.bg_btn_active);
-            cardTriggerDown.setBackgroundResource(R.drawable.bg_btn_inactive);
+    private void setOrientationUi(boolean isLandscape) {
+        if (isLandscape) {
+            cardOrientLandscape.setBackgroundResource(R.drawable.bg_btn_active);
+            cardOrientPortrait.setBackgroundResource(R.drawable.bg_btn_inactive);
         } else {
-            cardTriggerUp.setBackgroundResource(R.drawable.bg_btn_inactive);
-            cardTriggerDown.setBackgroundResource(R.drawable.bg_btn_active);
+            cardOrientLandscape.setBackgroundResource(R.drawable.bg_btn_inactive);
+            cardOrientPortrait.setBackgroundResource(R.drawable.bg_btn_active);
         }
+    }
+
+    private void setModeUi(String mode) {
+        cardModeHead.setBackgroundResource("head".equals(mode) ? R.drawable.bg_btn_active : R.drawable.bg_btn_inactive);
+        cardModeHand.setBackgroundResource("hand".equals(mode) ? R.drawable.bg_btn_active : R.drawable.bg_btn_inactive);
+        cardModeEye.setBackgroundResource("eye".equals(mode) ? R.drawable.bg_btn_active : R.drawable.bg_btn_inactive);
     }
 
     private void playSuccessChime() {
@@ -259,7 +281,7 @@ public class MainActivity extends AppCompatActivity {
 
         boolean cameraGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
         if (cameraGranted) {
-            tvStatusCamera.setText("3. Front Camera: GRANTED (Ready for Eye Tracking) ✔");
+            tvStatusCamera.setText("3. Front Camera: GRANTED (Ready for Gesture Tracking) ✔");
             tvStatusCamera.setTextColor(0xFF10B981);
         } else {
             tvStatusCamera.setText("3. Front Camera: NOT GRANTED (Tap Camera button above) ❌");
