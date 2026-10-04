@@ -14,34 +14,51 @@
         android:textColor="#FFFFFF"
         android:textSize="22sp"
         android:textStyle="bold"
-        android:layout_marginBottom="8dp" />
+        android:layout_marginBottom="6dp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Look UP to scroll YouTube Shorts.\nTap floating bubble anytime to pause!"
+        android:text="Look UP to scroll YouTube Shorts.\nTap bubble to pause | Long-press to close."
         android:textColor="#A0A0A0"
         android:textSize="13sp"
         android:gravity="center"
-        android:layout_marginBottom="32dp" />
+        android:layout_marginBottom="24dp" />
 
     <Button
         android:id="@+id/btn_grant_overlay"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="1. Grant 'Display Over Other Apps'"
+        android:text="1. Allow 'Display Over Other Apps'"
         android:backgroundTint="#2E7D32"
         android:textColor="#FFFFFF"
+        android:layout_marginBottom="10dp" />
+
+    <Button
+        android:id="@+id/btn_unlock_restricted"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="2. Fix 'Restricted setting' (App Info)"
+        android:backgroundTint="#6D28D9"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="10dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Tap 3 dots (⋮) in App Info > 'Allow restricted settings'"
+        android:textColor="#9CA3AF"
+        android:textSize="11sp"
         android:layout_marginBottom="12dp" />
 
     <Button
         android:id="@+id/btn_grant_accessibility"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="2. Enable Accessibility Service"
+        android:text="3. Turn ON Accessibility Service"
         android:backgroundTint="#1976D2"
         android:textColor="#FFFFFF"
-        android:layout_marginBottom="24dp" />
+        android:layout_marginBottom="20dp" />
 
     <Button
         android:id="@+id/btn_start_bubble"
@@ -50,6 +67,16 @@
         android:text="Start Floating Eye Bubble"
         android:backgroundTint="#00C853"
         android:textColor="#000000"
+        android:textStyle="bold"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/btn_stop_bubble"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Stop / Remove Floating Bubble"
+        android:backgroundTint="#DC2626"
+        android:textColor="#FFFFFF"
         android:textStyle="bold" />
 
 </LinearLayout>
