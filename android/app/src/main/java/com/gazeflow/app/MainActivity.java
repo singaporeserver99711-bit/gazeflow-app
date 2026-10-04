@@ -116,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
             setModeUi("hand");
             prefs.edit().putString("control_mode", "hand").apply();
             syncSettingsToService();
-            Toast.makeText(this, "Mode: ✋ Hand & Palm (Wave UP=Next, DOWN=Prev, Hold Palm=Pause)", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Mode: ✌️ Hand (2-3 Fingers=Scroll, 5-Finger Palm=Pause)", Toast.LENGTH_SHORT).show();
         });
 
         cardModeEye.setOnClickListener(v -> {
