@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <!-- Live Front Camera Preview -->
+    <TextureView
+        android:id="@+id/air_camera_texture"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Air Drawing Canvas & Zone Boundaries Overlay -->
+    <com.gazeflow.app.AirDrawView
+        android:id="@+id/air_draw_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Top Action Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:background="#80000000"
+        android:gravity="center_vertical"
+        android:layout_alignParentTop="true">
+
+        <Button
+            android:id="@+id/btn_back"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="← Back"
+            android:backgroundTint="#27272A"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Touchless Air-Canvas &amp; Zone Studio"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+        <Button
+            android:id="@+id/btn_clear_canvas"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="Clear Drawing"
+            android:backgroundTint="#3F3F46"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <!-- Bottom Collapsible Settings & Diagnostics Drawer -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#D918181B"
+        android:padding="14dp"
+        android:layout_alignParentBottom="true">
+
+        <!-- Controls Row 1: Face Zone Width Slider -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="4dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="👤 Center Face Exclusion Width:"
+                android:textColor="#F87171"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_face_zone_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Center 38% Masked"
+                android:textColor="#F87171"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <SeekBar
+            android:id="@+id/seek_face_zone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="50"
+            android:progress="23"
+            android:progressTint="#EF4444"
+            android:thumbTint="#EF4444"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Controls Row 2: Sensitivity & Orientation -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="3"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+
+            <!-- Sensitivity -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginEnd="6dp">
+
+                <TextView
+                    android:id="@+id/tv_canvas_sens_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Sensitivity: 6 / 10"
+                    android:textColor="#10B981"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <SeekBar
+                    android:id="@+id/seek_canvas_sens"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:max="9"
+                    android:progress="5"
+                    android:progressTint="#10B981"
+                    android:thumbTint="#10B981" />
+            </LinearLayout>
+
+            <!-- Invert Switch -->
+            <CheckBox
+                android:id="@+id/cb_canvas_invert"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Invert Direction"
+                android:textColor="#E5E7EB"
+                android:textSize="11sp"
+                android:buttonTint="#10B981" />
+
+            <!-- Orientation Button -->
+            <Button
+                android:id="@+id/btn_canvas_orientation"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_weight="1"
+                android:text="Mode: Landscape"
+                android:textSize="11sp"
+                android:backgroundTint="#27272A"
+                android:textColor="#FFFFFF" />
+        </LinearLayout>
+
+        <!-- Save & Apply to Shorts Bubble -->
+        <Button
+            android:id="@+id/btn_apply_zones_to_bubble"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:text="💾 Save &amp; Apply Zones to YouTube Shorts Bubble"
+            android:backgroundTint="#10B981"
+            android:textColor="#000000"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+</RelativeLayout>

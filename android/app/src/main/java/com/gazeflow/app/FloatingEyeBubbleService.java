@@ -71,6 +71,7 @@ public class FloatingEyeBubbleService extends Service {
     private String controlMode = "head"; // "head", "hand", "eye"
     private String deviceOrientation = "landscape"; // "landscape", "portrait"
     private boolean invertDirection = false;
+    private float faceZoneRatio = 0.38f; // Center 38% excluded for face
     private int sensitivityLevel = 6; // 1 to 10
     private long cooldownMs = 800; // 400ms to 2000ms
     private int palmHoldThreshold = 3; // frames (150ms to 600ms)
@@ -217,6 +218,7 @@ public class FloatingEyeBubbleService extends Service {
         controlMode = prefs.getString("control_mode", "head");
         deviceOrientation = prefs.getString("device_orientation", "landscape");
         invertDirection = prefs.getBoolean("invert_direction", false);
+        faceZoneRatio = prefs.getFloat("face_zone_ratio", 0.38f);
 
         sensitivityLevel = prefs.getInt("sensitivity_level", 6); // 1 to 10
         cooldownMs = prefs.getInt("cooldown_ms", 800); // 400 to 2000
@@ -494,34 +496,44 @@ public class FloatingEyeBubbleService extends Service {
         int ambientAvg = ambientSum / 256;
         int noiseFloor = Math.max(12, ambientAvg / 14);
 
-        float weightedYSum = 0;
-        float totalDiff = 0;
-        int activePixels = 0;
+        // Center exclusion columns (completely ignores head/face in center!)
+        int centerStartCol = (int) (16 * (0.5f - faceZoneRatio / 2f));
+        int centerEndCol = (int) (16 * (0.5f + faceZoneRatio / 2f));
 
-        float leftMotion = 0;
-        float centerMotion = 0;
-        float rightMotion = 0;
+        float leftWeightedY = 0, leftDiff = 0;
+        float rightWeightedY = 0, rightDiff = 0;
+        int activePixels = 0;
 
         for (int y = 0; y < 16; y++) {
             for (int x = 0; x < 16; x++) {
+                // COMPLETELY IGNORE CENTER FACE ZONE!
+                if (x >= centerStartCol && x <= centerEndCol) {
+                    continue;
+                }
+
                 int diff = Math.abs(currentLuma[y * 16 + x] - prevLuma[y * 16 + x]);
                 if (diff > noiseFloor) {
                     activePixels++;
-                    totalDiff += diff;
-                    weightedYSum += (y * diff);
-
-                    if (x < 5) leftMotion += diff;
-                    else if (x < 11) centerMotion += diff;
-                    else rightMotion += diff;
+                    if (x < centerStartCol) {
+                        leftDiff += diff;
+                        leftWeightedY += (y * diff);
+                    } else {
+                        rightDiff += diff;
+                        rightWeightedY += (y * diff);
+                    }
                 }
             }
         }
         prevLuma = currentLuma;
 
-        // Dynamic sensitivity scaling from Level 1 to 10
-        float minEnergyRequired = Math.max(150.0f, 400.0f - (sensitivityLevel * 25.0f));
+        float dominantDiff = Math.max(leftDiff, rightDiff);
+        boolean isLeft = (leftDiff > rightDiff);
+        float dominantWeightedY = isLeft ? leftWeightedY : rightWeightedY;
 
-        if (totalDiff < minEnergyRequired) {
+        // Dynamic sensitivity scaling from Level 1 to 10
+        float minEnergyRequired = Math.max(120.0f, 380.0f - (sensitivityLevel * 25.0f));
+
+        if (dominantDiff < minEnergyRequired) {
             if (currentTime - centroidStartTime > 450) {
                 prevCentroidY = -1;
             }
@@ -529,9 +541,8 @@ public class FloatingEyeBubbleService extends Service {
             return;
         }
 
-        // --- 1. OPEN PALM DETECTION (Wide coverage + Steady dwell) ---
-        boolean isWide = (leftMotion > 50 && centerMotion > 80 && rightMotion > 50);
-        if (isWide && activePixels > 70) {
+        // --- 1. OPEN PALM DETECTION (High coverage in active side zone + Steady dwell) ---
+        if (activePixels > 45) {
             palmSteadyFrames++;
             if (palmSteadyFrames >= palmHoldThreshold) {
                 palmSteadyFrames = 0;
@@ -548,7 +559,7 @@ public class FloatingEyeBubbleService extends Service {
         }
 
         // --- 2. TRAJECTORY FLICK UP / DOWN ---
-        float currentCentroidY = (weightedYSum / totalDiff) / 15.0f; // Normalized 0.0 (top) to 1.0 (bottom)
+        float currentCentroidY = (dominantWeightedY / dominantDiff) / 15.0f; // Normalized 0.0 (top) to 1.0 (bottom)
 
         if (prevCentroidY < 0) {
             prevCentroidY = currentCentroidY;

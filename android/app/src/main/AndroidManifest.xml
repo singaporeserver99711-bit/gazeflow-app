@@ -23,6 +23,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".AirCanvasActivity"
+            android:exported="false"
+            android:screenOrientation="unspecified" />
+
         <service
             android:name=".FloatingEyeBubbleService"
             android:exported="false" />

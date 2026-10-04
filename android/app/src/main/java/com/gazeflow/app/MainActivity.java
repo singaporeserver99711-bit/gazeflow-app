@@ -90,9 +90,19 @@ public class MainActivity extends AppCompatActivity {
         cbAudioChimes = findViewById(R.id.cb_audio_chimes);
 
         // Actions
+        Button btnLaunchAirCanvas = findViewById(R.id.btn_launch_air_canvas);
         Button btnStartBubble = findViewById(R.id.btn_start_bubble);
         Button btnTestGesture = findViewById(R.id.btn_test_gesture);
         Button btnStopBubble = findViewById(R.id.btn_stop_bubble);
+
+        btnLaunchAirCanvas.setOnClickListener(v -> {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_CODE);
+                Toast.makeText(this, "Camera permission needed for Air-Canvas!", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            startActivity(new Intent(this, AirCanvasActivity.class));
+        });
 
         // 1. Orientation
         String savedOrientation = prefs.getString("device_orientation", "landscape");
