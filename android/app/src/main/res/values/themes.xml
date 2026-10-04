@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.GazeFlow" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+    <style name="Theme.GazeFlow" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="colorPrimary">#10B981</item>
-        <item name="colorSecondary">#059669</item>
+        <item name="colorPrimaryDark">#059669</item>
+        <item name="colorAccent">#10B981</item>
         <item name="android:statusBarColor">#121212</item>
     </style>
 </resources>
