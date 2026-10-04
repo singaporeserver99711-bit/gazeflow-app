@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">GazeFlow</string>
+    <string name="accessibility_service_description">GazeFlow allows scrolling YouTube Shorts hands-free using eye gestures.</string>
+</resources>

@@ -1,0 +1,6 @@
+{
+  "name": "GazeFlow - Hands-Free Eye-Scroll Reels",
+  "description": "Scroll YouTube Shorts and Reels hands-free using real-time eye tracking, gaze navigation, and auto-pause when looking away.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
