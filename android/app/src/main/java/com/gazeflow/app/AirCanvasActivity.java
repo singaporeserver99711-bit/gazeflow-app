@@ -15,7 +15,6 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
-import android.hardware.camera2.TotalCaptureResult;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -34,14 +33,18 @@ import java.util.Collections;
 public class AirCanvasActivity extends AppCompatActivity {
 
     private TextureView cameraTextureView;
-    private AirDrawView airDrawView;
+    private SensorHeatmapOverlayView heatmapOverlayView;
+    private AirDrawCanvasView airDrawCanvasView;
 
-    private TextView tvFaceZoneLabel;
-    private SeekBar seekFaceZone;
-    private TextView tvCanvasSensLabel;
-    private SeekBar seekCanvasSens;
-    private CheckBox cbCanvasInvert;
-    private Button btnCanvasOrientation;
+    private Button btnRotateCamera;
+    private CheckBox cbSwapAxes;
+    private CheckBox cbMirrorX;
+    private CheckBox cbInvertY;
+
+    private TextView tvFacePosLabel;
+    private SeekBar seekFacePosX;
+    private TextView tvFaceWidthLabel;
+    private SeekBar seekFaceWidth;
 
     private CameraDevice cameraDevice;
     private CameraCaptureSession cameraCaptureSession;
@@ -50,16 +53,21 @@ public class AirCanvasActivity extends AppCompatActivity {
     private String frontCameraId = null;
 
     private SharedPreferences prefs;
-    private String deviceOrientation = "landscape";
-    private float faceZoneRatio = 0.38f;
-    private int sensitivityLevel = 6;
-    private boolean invertDirection = false;
 
+    // Calibration variables
+    private int cameraRotation = 270; // 0, 90, 180, 270
+    private boolean swapAxes = true;
+    private boolean mirrorX = false;
+    private boolean invertY = false;
+
+    private float facePosX = 0.50f;
+    private float faceWidth = 0.35f;
+
+    // Tracking state
     private boolean isProcessingFrame = false;
     private long lastFrameTime = 0;
     private int[] prevLuma = null;
     private float prevCentroidY = -1;
-    private long centroidStartTime = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,84 +75,92 @@ public class AirCanvasActivity extends AppCompatActivity {
         setContentView(R.layout.activity_air_canvas);
 
         prefs = getSharedPreferences(MainActivity.PREFS_NAME, Context.MODE_PRIVATE);
-        loadPreferences();
+        loadCalibrationSettings();
 
         cameraTextureView = findViewById(R.id.air_camera_texture);
-        airDrawView = findViewById(R.id.air_draw_view);
-        airDrawView.setFaceZoneWidthRatio(faceZoneRatio);
+        heatmapOverlayView = findViewById(R.id.sensor_heatmap_overlay);
+        airDrawCanvasView = findViewById(R.id.air_draw_canvas);
 
-        tvFaceZoneLabel = findViewById(R.id.tv_face_zone_label);
-        seekFaceZone = findViewById(R.id.seek_face_zone);
-        tvCanvasSensLabel = findViewById(R.id.tv_canvas_sens_label);
-        seekCanvasSens = findViewById(R.id.seek_canvas_sens);
-        cbCanvasInvert = findViewById(R.id.cb_canvas_invert);
-        btnCanvasOrientation = findViewById(R.id.btn_canvas_orientation);
+        btnRotateCamera = findViewById(R.id.btn_rotate_camera);
+        cbSwapAxes = findViewById(R.id.cb_swap_axes);
+        cbMirrorX = findViewById(R.id.cb_mirror_x);
+        cbInvertY = findViewById(R.id.cb_invert_y);
+
+        tvFacePosLabel = findViewById(R.id.tv_face_pos_label);
+        seekFacePosX = findViewById(R.id.seek_face_pos_x);
+        tvFaceWidthLabel = findViewById(R.id.tv_face_width_label);
+        seekFaceWidth = findViewById(R.id.seek_face_width);
 
         Button btnBack = findViewById(R.id.btn_back);
-        Button btnClearCanvas = findViewById(R.id.btn_clear_canvas);
-        Button btnApplyZones = findViewById(R.id.btn_apply_zones_to_bubble);
+        Button btnClear = findViewById(R.id.btn_clear_canvas);
+        Button btnApply = findViewById(R.id.btn_apply_zones_to_bubble);
 
-        // Setup UI values
-        int faceProgress = (int) ((faceZoneRatio - 0.15f) * 100f);
-        seekFaceZone.setProgress(faceProgress);
-        tvFaceZoneLabel.setText("Center " + (int)(faceZoneRatio * 100) + "% Masked");
+        // Update UI states
+        btnRotateCamera.setText("🔄 Rotate: " + cameraRotation + "°");
+        cbSwapAxes.setChecked(swapAxes);
+        cbMirrorX.setChecked(mirrorX);
+        cbInvertY.setChecked(invertY);
 
-        seekCanvasSens.setProgress(sensitivityLevel - 1);
-        tvCanvasSensLabel.setText("Sensitivity: " + sensitivityLevel + " / 10");
+        seekFacePosX.setProgress((int) (facePosX * 100));
+        tvFacePosLabel.setText("👤 Face Position X: " + (int)(facePosX * 100) + "%");
 
-        cbCanvasInvert.setChecked(invertDirection);
-        btnCanvasOrientation.setText("Mode: " + ("landscape".equals(deviceOrientation) ? "Landscape" : "Portrait"));
+        seekFaceWidth.setProgress((int) (faceWidth * 100));
+        tvFaceWidthLabel.setText("👤 Face Mask Width: " + (int)(faceWidth * 100) + "%");
+
+        heatmapOverlayView.setFaceBox(facePosX, faceWidth);
 
         btnBack.setOnClickListener(v -> finish());
-        btnClearCanvas.setOnClickListener(v -> airDrawView.clearCanvas());
+        btnClear.setOnClickListener(v -> airDrawCanvasView.clearCanvas());
 
-        // Dynamic Face Zone Slider
-        seekFaceZone.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                faceZoneRatio = 0.15f + (progress / 100f);
-                tvFaceZoneLabel.setText("Center " + (int)(faceZoneRatio * 100) + "% Masked");
-                airDrawView.setFaceZoneWidthRatio(faceZoneRatio);
-            }
-            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
-            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
-        });
+        // Rotate button cycles: 270 -> 0 -> 90 -> 180
+        btnRotateCamera.setOnClickListener(v -> {
+            if (cameraRotation == 270) cameraRotation = 0;
+            else if (cameraRotation == 0) cameraRotation = 90;
+            else if (cameraRotation == 90) cameraRotation = 180;
+            else cameraRotation = 270;
 
-        // Sensitivity Slider
-        seekCanvasSens.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                sensitivityLevel = progress + 1;
-                tvCanvasSensLabel.setText("Sensitivity: " + sensitivityLevel + " / 10");
-            }
-            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
-            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
-        });
-
-        // Invert Direction
-        cbCanvasInvert.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            invertDirection = isChecked;
-        });
-
-        // Orientation Switch
-        btnCanvasOrientation.setOnClickListener(v -> {
-            if ("landscape".equals(deviceOrientation)) {
-                deviceOrientation = "portrait";
-            } else {
-                deviceOrientation = "landscape";
-            }
-            btnCanvasOrientation.setText("Mode: " + ("landscape".equals(deviceOrientation) ? "Landscape" : "Portrait"));
+            btnRotateCamera.setText("🔄 Rotate: " + cameraRotation + "°");
             applyOrientationTransform(cameraTextureView.getWidth(), cameraTextureView.getHeight());
-            Toast.makeText(this, "Camera rotated for " + deviceOrientation, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Rotation: " + cameraRotation + "°", Toast.LENGTH_SHORT).show();
         });
 
-        // Save & Apply Zones to YouTube Shorts Bubble
-        btnApplyZones.setOnClickListener(v -> {
+        cbSwapAxes.setOnCheckedChangeListener((b, isChecked) -> swapAxes = isChecked);
+        cbMirrorX.setOnCheckedChangeListener((b, isChecked) -> mirrorX = isChecked);
+        cbInvertY.setOnCheckedChangeListener((b, isChecked) -> invertY = isChecked);
+
+        // Face Position X Slider
+        seekFacePosX.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                facePosX = progress / 100f;
+                tvFacePosLabel.setText("👤 Face Position X: " + progress + "%");
+                heatmapOverlayView.setFaceBox(facePosX, faceWidth);
+            }
+            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        // Face Width Slider
+        seekFaceWidth.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                faceWidth = Math.max(0.10f, progress / 100f);
+                tvFaceWidthLabel.setText("👤 Face Mask Width: " + progress + "%");
+                heatmapOverlayView.setFaceBox(facePosX, faceWidth);
+            }
+            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+        // Save & Apply
+        btnApply.setOnClickListener(v -> {
             prefs.edit()
-                .putFloat("face_zone_ratio", faceZoneRatio)
-                .putInt("sensitivity_level", sensitivityLevel)
-                .putBoolean("invert_direction", invertDirection)
-                .putString("device_orientation", deviceOrientation)
+                .putInt("camera_rotation", cameraRotation)
+                .putBoolean("swap_axes", swapAxes)
+                .putBoolean("mirror_x", mirrorX)
+                .putBoolean("invert_y", invertY)
+                .putFloat("face_pos_x", facePosX)
+                .putFloat("face_width", faceWidth)
                 .apply();
 
             if (FloatingEyeBubbleService.isRunning) {
@@ -153,22 +169,24 @@ public class AirCanvasActivity extends AppCompatActivity {
                 startService(updateIntent);
             }
 
-            Toast.makeText(this, "✔ Zones & Calibrated Settings Saved to Shorts Bubble!", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "✔ Saved 1:1 Orientation & Face Exclusion to Shorts Bubble!", Toast.LENGTH_LONG).show();
         });
 
         setupCameraThread();
         setupTextureListener();
     }
 
-    private void loadPreferences() {
-        deviceOrientation = prefs.getString("device_orientation", "landscape");
-        faceZoneRatio = prefs.getFloat("face_zone_ratio", 0.38f);
-        sensitivityLevel = prefs.getInt("sensitivity_level", 6);
-        invertDirection = prefs.getBoolean("invert_direction", false);
+    private void loadCalibrationSettings() {
+        cameraRotation = prefs.getInt("camera_rotation", 270);
+        swapAxes = prefs.getBoolean("swap_axes", true);
+        mirrorX = prefs.getBoolean("mirror_x", false);
+        invertY = prefs.getBoolean("invert_y", false);
+        facePosX = prefs.getFloat("face_pos_x", 0.50f);
+        faceWidth = prefs.getFloat("face_width", 0.35f);
     }
 
     private void setupCameraThread() {
-        cameraThread = new HandlerThread("AirCanvasThread");
+        cameraThread = new HandlerThread("DualSplitThread");
         cameraThread.start();
         cameraHandler = new Handler(cameraThread.getLooper());
     }
@@ -195,13 +213,11 @@ public class AirCanvasActivity extends AppCompatActivity {
             @Override
             public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
                 long now = System.currentTimeMillis();
-                if (now - lastFrameTime < 45 || isProcessingFrame) {
-                    return;
-                }
+                if (now - lastFrameTime < 45 || isProcessingFrame) return;
                 lastFrameTime = now;
                 isProcessingFrame = true;
 
-                Bitmap bitmap = cameraTextureView.getBitmap(24, 24);
+                Bitmap bitmap = cameraTextureView.getBitmap(16, 16);
                 if (bitmap == null) {
                     isProcessingFrame = false;
                     return;
@@ -210,7 +226,7 @@ public class AirCanvasActivity extends AppCompatActivity {
                 if (cameraHandler != null) {
                     cameraHandler.post(() -> {
                         try {
-                            analyzeAirDrawing(bitmap);
+                            processDualSplitFrame(bitmap);
                         } finally {
                             bitmap.recycle();
                             isProcessingFrame = false;
@@ -229,17 +245,12 @@ public class AirCanvasActivity extends AppCompatActivity {
         Matrix matrix = new Matrix();
         float centerX = width / 2.0f;
         float centerY = height / 2.0f;
-
-        float rotation = "landscape".equals(deviceOrientation) ? 270f : 0f;
-        matrix.postRotate(rotation, centerX, centerY);
+        matrix.postRotate((float) cameraRotation, centerX, centerY);
         cameraTextureView.setTransform(matrix);
     }
 
     private void openFrontCamera() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) return;
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         if (manager == null) return;
 
@@ -311,20 +322,15 @@ public class AirCanvasActivity extends AppCompatActivity {
     }
 
     /**
-     * Touchless Air-Canvas Analyzer:
-     * - Filters out center face exclusion columns.
-     * - Detects hand presence in left or right side zones.
-     * - Maps fingertip position to screen and draws path!
+     * Dual Split-Screen Frame Processing with Real-Time Coordinate Mapping
      */
-    private void analyzeAirDrawing(Bitmap bitmap) {
-        int w = 24;
-        int h = 24;
-        int[] pixels = new int[w * h];
-        bitmap.getPixels(pixels, 0, w, 0, 0, w, h);
+    private void processDualSplitFrame(Bitmap bitmap) {
+        int[] pixels = new int[256];
+        bitmap.getPixels(pixels, 0, 16, 0, 0, 16, 16);
 
-        int[] currentLuma = new int[w * h];
+        int[] currentLuma = new int[256];
         int ambient = 0;
-        for (int i = 0; i < pixels.length; i++) {
+        for (int i = 0; i < 256; i++) {
             int c = pixels[i];
             int luma = (Color.red(c) * 77 + Color.green(c) * 150 + Color.blue(c) * 29) >> 8;
             currentLuma[i] = luma;
@@ -336,99 +342,101 @@ public class AirCanvasActivity extends AppCompatActivity {
             return;
         }
 
-        int noiseFloor = Math.max(12, (ambient / (w * h)) / 14);
+        int noiseFloor = Math.max(14, (ambient / 256) / 14);
 
-        // Center exclusion columns
-        int centerStartCol = (int) (w * (0.5f - faceZoneRatio / 2f));
-        int centerEndCol = (int) (w * (0.5f + faceZoneRatio / 2f));
-
-        float leftWeightedX = 0, leftWeightedY = 0, leftDiff = 0;
-        float rightWeightedX = 0, rightWeightedY = 0, rightDiff = 0;
+        int[] heatmap = new int[256];
+        float totalDiff = 0;
+        float weightedX = 0;
+        float weightedY = 0;
         int activeSidePixels = 0;
 
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                // EXCLUDE CENTER FACE ZONE
-                if (x >= centerStartCol && x <= centerEndCol) {
-                    continue;
-                }
+        float faceMinX = facePosX - (faceWidth / 2f);
+        float faceMaxX = facePosX + (faceWidth / 2f);
 
-                int diff = Math.abs(currentLuma[y * w + x] - prevLuma[y * w + x]);
+        for (int rawY = 0; rawY < 16; rawY++) {
+            for (int rawX = 0; rawX < 16; rawX++) {
+                int diff = Math.abs(currentLuma[rawY * 16 + rawX] - prevLuma[rawY * 16 + rawX]);
+                heatmap[rawY * 16 + rawX] = diff;
+
                 if (diff > noiseFloor) {
-                    activeSidePixels++;
-                    if (x < centerStartCol) {
-                        // Left Hand Zone
-                        leftDiff += diff;
-                        leftWeightedX += (x * diff);
-                        leftWeightedY += (y * diff);
-                    } else {
-                        // Right Hand Zone
-                        rightDiff += diff;
-                        rightWeightedX += (x * diff);
-                        rightWeightedY += (y * diff);
+                    // Coordinate Mapping (Swap axes / Mirror / Invert)
+                    float mappedX = rawX / 15.0f;
+                    float mappedY = rawY / 15.0f;
+
+                    if (swapAxes) {
+                        float temp = mappedX;
+                        mappedX = mappedY;
+                        mappedY = temp;
                     }
+
+                    if (mirrorX) {
+                        mappedX = 1.0f - mappedX;
+                    }
+
+                    if (invertY) {
+                        mappedY = 1.0f - mappedY;
+                    }
+
+                    // Check if inside Face Exclusion Box
+                    if (mappedX >= faceMinX && mappedX <= faceMaxX) {
+                        continue; // EXCLUDE FACE REGION!
+                    }
+
+                    activeSidePixels++;
+                    totalDiff += diff;
+                    weightedX += (mappedX * diff);
+                    weightedY += (mappedY * diff);
                 }
             }
         }
         prevLuma = currentLuma;
 
-        float chosenDiff = Math.max(leftDiff, rightDiff);
-        boolean isLeft = (leftDiff > rightDiff);
+        if (totalDiff > 160) {
+            float handX = weightedX / totalDiff;
+            float handY = weightedY / totalDiff;
 
-        float minMotion = Math.max(180f, 450f - (sensitivityLevel * 28f));
-
-        if (chosenDiff > minMotion) {
-            float avgX = isLeft ? (leftWeightedX / leftDiff) : (rightWeightedX / rightDiff);
-            float avgY = isLeft ? (leftWeightedY / leftDiff) : (rightWeightedY / rightDiff);
-
-            // Normalized screen coordinates (0.0 to 1.0)
-            float normX = avgX / (float) w;
-            float normY = avgY / (float) h;
-
-            // Invert camera mirroring for natural hand pointing
-            normX = 1.0f - normX;
-
-            float currentCentroidY = normY;
             float dy = 0f;
-            if (prevCentroidY > 0) {
-                dy = prevCentroidY - currentCentroidY;
+            if (prevCentroidY >= 0) {
+                dy = prevCentroidY - handY; // Positive = Moving UP, Negative = Moving DOWN
             }
-            prevCentroidY = currentCentroidY;
+            prevCentroidY = handY;
 
             String status;
             int statusColor;
             boolean isPalm = (activeSidePixels > 60);
 
             if (isPalm) {
-                status = "✋ PALM DETECTED in " + (isLeft ? "LEFT" : "RIGHT") + " Zone -> PAUSE";
-                statusColor = Color.parseColor("#C084FC"); // Purple
+                status = "✋ PALM DETECTED -> PAUSE VIDEO";
+                statusColor = Color.parseColor("#C084FC");
             } else if (Math.abs(dy) > 0.08f) {
                 boolean up = dy > 0;
-                if (invertDirection) up = !up;
-                status = up ? "☝️ UPWARD FLICK DETECTED -> NEXT SHORT" : "👇 DOWNWARD FLICK DETECTED -> PREV SHORT";
+                status = up ? "☝️ UPWARD FLICK -> NEXT SHORT" : "👇 DOWNWARD FLICK -> PREV SHORT";
                 statusColor = up ? Color.parseColor("#38BDF8") : Color.parseColor("#F59E0B");
             } else {
-                status = "DRAWING with " + (isLeft ? "LEFT" : "RIGHT") + " Hand";
+                status = "DRAWING IN AIR (Finger Active)";
                 statusColor = Color.parseColor("#10B981");
             }
 
-            final float finalNormX = normX;
-            final float finalNormY = normY;
+            final int[] finalHeatmap = heatmap;
+            final float finalHandX = handX;
+            final float finalHandY = handY;
             final String finalStatus = status;
             final int finalColor = statusColor;
             final float finalDy = dy;
-            final boolean finalIsPalm = isPalm;
 
             runOnUiThread(() -> {
-                airDrawView.setFingerPosition(finalNormX, finalNormY, true);
-                airDrawView.updateGestureFeedback(finalStatus, finalColor, finalDy, finalIsPalm);
+                heatmapOverlayView.updateSensorData(finalHeatmap, finalHandX, finalHandY);
+                airDrawCanvasView.addFingerPoint(finalHandX, finalHandY, true);
+                airDrawCanvasView.setGestureStatus(finalStatus, finalColor, finalDy);
             });
 
         } else {
             prevCentroidY = -1;
+            final int[] finalHeatmap = heatmap;
             runOnUiThread(() -> {
-                airDrawView.setFingerPosition(0, 0, false);
-                airDrawView.updateGestureFeedback("READY (Move hand in Left or Right zone)", Color.parseColor("#10B981"), 0f, false);
+                heatmapOverlayView.updateSensorData(finalHeatmap, -1f, -1f);
+                airDrawCanvasView.addFingerPoint(0, 0, false);
+                airDrawCanvasView.setGestureStatus("READY (Move hand in air)", Color.parseColor("#10B981"), 0f);
             });
         }
     }

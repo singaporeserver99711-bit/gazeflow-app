@@ -34,11 +34,14 @@ export class GazeTrackerService {
     orientation: 'portrait',
     scrollTriggerDirection: 'look-up', // Look UP to scroll to next short
     sensitivity: 3,
+    handGestureSensitivity: 6,
+    faceExclusionZoneWidth: 0.38,
     dwellTimeMs: 550,
     cooldownMs: 1200,
     soundFeedback: true,
     hapticFeedback: true,
     showPip: true,
+    visionDebugOverlay: false,
     simulationMode: false,
     autoPlayAudio: false,
   };
@@ -67,6 +70,14 @@ export class GazeTrackerService {
   private useMediaPipe: boolean = false;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private lastFaceMeshLandmarks: any[] | null = null;
+
+  // Hand gesture state with spatial mask
+  private prevHandLuma: Uint8Array | null = null;
+  private prevHandCentroidY: number = -1;
+  private lastHandTriggerTime: number = 0;
+  private palmSteadyFrames: number = 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private currentHandDebug: any = null;
 
   constructor() {
     this.loadSavedSettings();
@@ -364,10 +375,238 @@ export class GazeTrackerService {
 
       this.processGazeFrame(rawX, rawY, faceDetected, isBlinking, confidence, deltaTime, timestamp);
 
+      // Process peripheral hand gestures with central head spatial mask
+      if (this.videoElement && this.videoElement.readyState >= 2 && !this.settings.simulationMode) {
+        this.processHandGesturesWithSpatialMask(timestamp);
+      }
+
       this.animationFrameId = requestAnimationFrame(loop);
     };
 
     this.animationFrameId = requestAnimationFrame(loop);
+  }
+
+  /**
+   * Spatial Mask Gesture Engine:
+   * Normalizes camera coordinates for landscape and portrait orientations before applying
+   * the spatial exclusion mask, ensuring that the 'upward' scroll trigger remains consistent
+   * regardless of device aspect ratio and camera orientation.
+   */
+  private processHandGesturesWithSpatialMask(timestamp: number) {
+    if (!this.canvasCtx || !this.videoElement || !this.canvasElement) return;
+
+    // Cooldown check
+    const cooldown = this.settings.cooldownMs || 1000;
+    if (timestamp - this.lastHandTriggerTime < cooldown) return;
+
+    const w = this.canvasElement.width;
+    const h = this.canvasElement.height;
+    if (w === 0 || h === 0) return;
+
+    const imgData = this.canvasCtx.getImageData(0, 0, w, h);
+    const data = imgData.data;
+
+    // Sample 24x24 low-res grid for fast, battery-efficient processing
+    const sampleW = 24;
+    const sampleH = 24;
+    const stepX = Math.floor(w / sampleW);
+    const stepY = Math.floor(h / sampleH);
+
+    const currentLuma = new Uint8Array(sampleW * sampleH);
+    let totalLuma = 0;
+
+    for (let sy = 0; sy < sampleH; sy++) {
+      for (let sx = 0; sx < sampleW; sx++) {
+        const px = Math.min(w - 1, sx * stepX);
+        const py = Math.min(h - 1, sy * stepY);
+        const idx = (py * w + px) * 4;
+        const luma = (data[idx] * 77 + data[idx + 1] * 150 + data[idx + 2] * 29) >> 8;
+        currentLuma[sy * sampleW + sx] = luma;
+        totalLuma += luma;
+      }
+    }
+
+    if (!this.prevHandLuma) {
+      this.prevHandLuma = currentLuma;
+      return;
+    }
+
+    // Adaptive noise floor based on ambient lighting
+    const avgAmbient = totalLuma / (sampleW * sampleH);
+    const noiseFloor = Math.max(12, Math.floor(avgAmbient / 14));
+
+    // Determine camera and screen orientation
+    const orientation = this.settings.orientation;
+    const isLandscape = orientation === 'landscape-left' || orientation === 'landscape-right' || (w > h && orientation === 'desktop');
+    const aspectRatio = w / h;
+
+    // Configurable Spatial Mask: defined in normalized device screen coordinates (0 to 1)
+    const maskRatio = Math.max(0.15, Math.min(0.70, this.settings.faceExclusionZoneWidth ?? 0.38));
+    const maskStart = 0.5 - maskRatio / 2;
+    const maskEnd = 0.5 + maskRatio / 2;
+
+    let leftDiff = 0;
+    let leftWeightedY = 0;
+    let rightDiff = 0;
+    let rightWeightedY = 0;
+    let headInMaskDiff = 0;
+    let activeSidePixels = 0;
+
+    for (let sy = 0; sy < sampleH; sy++) {
+      for (let sx = 0; sx < sampleW; sx++) {
+        // Raw normalized camera coordinate (0 to 1)
+        const rawNormX = sx / (sampleW - 1);
+        const rawNormY = sy / (sampleH - 1);
+
+        // 1. Transform raw camera coordinates to Normalized Device Screen Space
+        let screenX = rawNormX;
+        let screenY = rawNormY;
+
+        switch (orientation) {
+          case 'portrait':
+            screenX = 1 - rawNormX; // Mirrored horizontally for natural hand interaction
+            screenY = rawNormY;
+            break;
+          case 'portrait-inverted':
+            screenX = rawNormX;
+            screenY = 1 - rawNormY;
+            break;
+          case 'landscape-left':
+            // Rotated 90° anti-clockwise (camera on left):
+            // Camera Y maps to screen X, inverted camera X maps to screen Y
+            screenX = rawNormY;
+            screenY = 1 - rawNormX;
+            break;
+          case 'landscape-right':
+            // Rotated 90° clockwise (camera on right):
+            screenX = 1 - rawNormY;
+            screenY = rawNormX;
+            break;
+          case 'desktop':
+          default:
+            screenX = 1 - rawNormX;
+            screenY = rawNormY;
+            break;
+        }
+
+        const diff = Math.abs(currentLuma[sy * sampleW + sx] - this.prevHandLuma[sy * sampleW + sx]);
+
+        // 2. Apply Spatial Exclusion Mask in Normalized Screen Space
+        // Central region (where head and torso are positioned) is ignored
+        if (screenX >= maskStart && screenX <= maskEnd) {
+          if (diff > noiseFloor) {
+            headInMaskDiff += diff;
+          }
+          continue;
+        }
+
+        if (diff > noiseFloor) {
+          activeSidePixels++;
+          if (screenX < maskStart) {
+            // Left Peripheral Hand Zone
+            leftDiff += diff;
+            leftWeightedY += (screenY * diff);
+          } else {
+            // Right Peripheral Hand Zone
+            rightDiff += diff;
+            rightWeightedY += (screenY * diff);
+          }
+        }
+      }
+    }
+    this.prevHandLuma = currentLuma;
+
+    const dominantDiff = Math.max(leftDiff, rightDiff);
+    const isLeft = leftDiff > rightDiff;
+    const dominantWeightedY = isLeft ? leftWeightedY : rightWeightedY;
+
+    // Sensitivity threshold mapping (Level 1 to 10)
+    const sensLevel = this.settings.handGestureSensitivity ?? 6;
+    const minEnergy = Math.max(85, 300 - (sensLevel * 20));
+
+    // Update vision debug snapshot
+    const activeHand = dominantDiff >= minEnergy;
+    const handX = isLeft ? (maskStart * 0.5) : (maskEnd + (1.0 - maskEnd) * 0.5);
+    const handY = dominantDiff > 0 ? (dominantWeightedY / dominantDiff) : 0.5;
+
+    this.currentHandDebug = {
+      activeHandDetected: activeHand,
+      handCentroidX: handX,
+      handCentroidY: handY,
+      isLeftZone: isLeft,
+      activePixels: activeSidePixels,
+      motionEnergy: Math.round(dominantDiff),
+      headInMaskDetected: headInMaskDiff > 40,
+      spatialMask: {
+        startRatio: maskStart,
+        endRatio: maskEnd,
+        widthRatio: maskRatio,
+      },
+    };
+
+    if (dominantDiff < minEnergy) {
+      this.palmSteadyFrames = Math.max(0, this.palmSteadyFrames - 1);
+      this.prevHandCentroidY = -1;
+      return;
+    }
+
+    // 1. Palm Pause Detection (Coverage in active side zone + steady dwell)
+    if (activeSidePixels > 24) {
+      this.palmSteadyFrames++;
+      if (this.palmSteadyFrames >= 3) {
+        this.palmSteadyFrames = 0;
+        this.prevHandCentroidY = -1;
+        this.lastHandTriggerTime = timestamp;
+        this.toggleManualPause();
+        return;
+      }
+    } else {
+      this.palmSteadyFrames = Math.max(0, this.palmSteadyFrames - 1);
+    }
+
+    // 2. Trajectory Flick (Up / Down) in Normalized Screen Space
+    // screenY: 0 is TOP of physical screen, 1 is BOTTOM of physical screen
+    const currentCentroidY = dominantWeightedY / dominantDiff;
+
+    if (this.prevHandCentroidY < 0) {
+      this.prevHandCentroidY = currentCentroidY;
+      return;
+    }
+
+    // Moving UP in physical space results in positive deltaY
+    const deltaY = this.prevHandCentroidY - currentCentroidY;
+
+    // Aspect-ratio normalized flick threshold:
+    // In landscape orientation, vertical screen height is shorter relative to width,
+    // so we scale the threshold by aspect ratio factor to keep physical gesture distance uniform.
+    const baseThreshold = Math.max(0.08, 0.22 - (sensLevel * 0.014));
+    const aspectCompensation = isLandscape ? Math.min(1.4, Math.max(1.1, aspectRatio * 0.75)) : 1.0;
+    const flickThreshold = baseThreshold * aspectCompensation;
+
+    if (Math.abs(deltaY) > flickThreshold) {
+      this.lastHandTriggerTime = timestamp;
+      this.prevHandCentroidY = -1;
+
+      if (deltaY > 0) {
+        // Hand flicked UP -> Trigger Next Short
+        this.triggerScroll('up', timestamp);
+      } else {
+        // Hand flicked DOWN -> Trigger Prev Short
+        this.triggerScroll('down', timestamp);
+      }
+    }
+  }
+
+  /**
+   * Helper to retrieve current spatial mask boundaries for UI overlays
+   */
+  public getSpatialMaskBounds() {
+    const maskRatio = Math.max(0.15, Math.min(0.70, this.settings.faceExclusionZoneWidth ?? 0.38));
+    return {
+      startRatio: 0.5 - maskRatio / 2,
+      endRatio: 0.5 + maskRatio / 2,
+      widthRatio: maskRatio,
+    };
   }
 
   /**
@@ -665,6 +904,7 @@ export class GazeTrackerService {
       dwellTarget: this.dwellTarget,
       rawPitch: rawY,
       rawYaw: rawX,
+      handDebug: this.currentHandDebug,
     };
 
     this.listeners.forEach((listener) => {

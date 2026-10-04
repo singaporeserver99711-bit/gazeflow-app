@@ -1,30 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000">
+    android:orientation="vertical"
+    android:background="#0A0A0A">
 
-    <!-- Live Front Camera Preview -->
-    <TextureView
-        android:id="@+id/air_camera_texture"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
-    <!-- Air Drawing Canvas & Zone Boundaries Overlay -->
-    <com.gazeflow.app.AirDrawView
-        android:id="@+id/air_draw_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
-    <!-- Top Action Bar -->
+    <!-- Top App Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="12dp"
-        android:background="#80000000"
-        android:gravity="center_vertical"
-        android:layout_alignParentTop="true">
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="10dp"
+        android:background="#18181B"
+        android:gravity="center_vertical">
 
         <Button
             android:id="@+id/btn_back"
@@ -39,9 +28,9 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Touchless Air-Canvas &amp; Zone Studio"
+            android:text="Dual Split-Screen Gesture &amp; Sensor Calibration Studio"
             android:textColor="#FFFFFF"
-            android:textSize="15sp"
+            android:textSize="14sp"
             android:textStyle="bold"
             android:gravity="center" />
 
@@ -49,128 +38,222 @@
             android:id="@+id/btn_clear_canvas"
             android:layout_width="wrap_content"
             android:layout_height="36dp"
-            android:text="Clear Drawing"
+            android:text="Clear Canvas"
             android:backgroundTint="#3F3F46"
             android:textColor="#FFFFFF"
             android:textSize="11sp" />
     </LinearLayout>
 
-    <!-- Bottom Collapsible Settings & Diagnostics Drawer -->
+    <!-- Main Dual Split-Screen Body -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:weightSum="2"
+        android:padding="8dp">
+
+        <!-- Screen 1 (Left Half): Camera Inputs & Heatmap Diagnostic -->
+        <RelativeLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="#121214"
+            android:layout_marginEnd="4dp">
+
+            <!-- Live Camera Texture -->
+            <TextureView
+                android:id="@+id/air_camera_texture"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <!-- Sensor Heatmap & Zone Overlay View -->
+            <com.gazeflow.app.SensorHeatmapOverlayView
+                android:id="@+id/sensor_heatmap_overlay"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <!-- Split 1 Header Banner -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#90000000"
+                android:padding="6dp"
+                android:text="📹 SCREEN 1: CAMERA INPUTS &amp; FACE EXCLUSION BOX"
+                android:textColor="#38BDF8"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_alignParentTop="true" />
+        </RelativeLayout>
+
+        <!-- Screen 2 (Right Half): Actual Drawable & Drag-ready Air Canvas -->
+        <RelativeLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="#18181B"
+            android:layout_marginStart="4dp">
+
+            <com.gazeflow.app.AirDrawCanvasView
+                android:id="@+id/air_draw_canvas"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <!-- Split 2 Header Banner -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#90000000"
+                android:padding="6dp"
+                android:text="🎨 SCREEN 2: ACTUAL DRAWABLE AIR-CANVAS"
+                android:textColor="#10B981"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_alignParentTop="true" />
+        </RelativeLayout>
+
+    </LinearLayout>
+
+    <!-- Bottom Controls & Axis Calibration Toolbar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="#D918181B"
-        android:padding="14dp"
-        android:layout_alignParentBottom="true">
+        android:background="#18181B"
+        android:padding="10dp">
 
-        <!-- Controls Row 1: Face Zone Width Slider -->
+        <!-- Calibration Row 1: Rotation Angle & Inversion Buttons -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:weightSum="4"
             android:gravity="center_vertical"
-            android:layout_marginBottom="4dp">
+            android:layout_marginBottom="6dp">
 
-            <TextView
+            <Button
+                android:id="@+id/btn_rotate_camera"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:text="🔄 Rotate: 270°"
+                android:textSize="10sp"
+                android:backgroundTint="#27272A"
+                android:textColor="#FFFFFF"
+                android:layout_marginEnd="4dp" />
+
+            <CheckBox
+                android:id="@+id/cb_swap_axes"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="👤 Center Face Exclusion Width:"
-                android:textColor="#F87171"
-                android:textSize="12sp"
-                android:textStyle="bold" />
+                android:text="Swap X/Y"
+                android:textColor="#E5E7EB"
+                android:textSize="10sp"
+                android:buttonTint="#10B981"
+                android:checked="true"
+                android:layout_marginEnd="4dp" />
 
-            <TextView
-                android:id="@+id/tv_face_zone_label"
-                android:layout_width="wrap_content"
+            <CheckBox
+                android:id="@+id/cb_mirror_x"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="Center 38% Masked"
-                android:textColor="#F87171"
-                android:textSize="12sp"
-                android:textStyle="bold" />
+                android:layout_weight="1"
+                android:text="Mirror X"
+                android:textColor="#E5E7EB"
+                android:textSize="10sp"
+                android:buttonTint="#10B981"
+                android:checked="false"
+                android:layout_marginEnd="4dp" />
+
+            <CheckBox
+                android:id="@+id/cb_invert_y"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Invert Y"
+                android:textColor="#E5E7EB"
+                android:textSize="10sp"
+                android:buttonTint="#10B981"
+                android:checked="false" />
         </LinearLayout>
 
-        <SeekBar
-            android:id="@+id/seek_face_zone"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:max="50"
-            android:progress="23"
-            android:progressTint="#EF4444"
-            android:thumbTint="#EF4444"
-            android:layout_marginBottom="8dp" />
-
-        <!-- Controls Row 2: Sensitivity & Orientation -->
+        <!-- Calibration Row 2: Face Mask Position & Size Sliders -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:weightSum="3"
-            android:gravity="center_vertical"
+            android:weightSum="2"
             android:layout_marginBottom="8dp">
 
-            <!-- Sensitivity -->
+            <!-- Face Mask Center Position -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:orientation="vertical"
-                android:layout_marginEnd="6dp">
+                android:layout_marginEnd="8dp">
 
                 <TextView
-                    android:id="@+id/tv_canvas_sens_label"
+                    android:id="@+id/tv_face_pos_label"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Sensitivity: 6 / 10"
-                    android:textColor="#10B981"
-                    android:textSize="11sp"
+                    android:text="👤 Face Position X: Center (50%)"
+                    android:textColor="#F87171"
+                    android:textSize="10sp"
                     android:textStyle="bold" />
 
                 <SeekBar
-                    android:id="@+id/seek_canvas_sens"
+                    android:id="@+id/seek_face_pos_x"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:max="9"
-                    android:progress="5"
-                    android:progressTint="#10B981"
-                    android:thumbTint="#10B981" />
+                    android:max="100"
+                    android:progress="50"
+                    android:progressTint="#EF4444"
+                    android:thumbTint="#EF4444" />
             </LinearLayout>
 
-            <!-- Invert Switch -->
-            <CheckBox
-                android:id="@+id/cb_canvas_invert"
+            <!-- Face Mask Width -->
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Invert Direction"
-                android:textColor="#E5E7EB"
-                android:textSize="11sp"
-                android:buttonTint="#10B981" />
+                android:orientation="vertical"
+                android:layout_marginStart="8dp">
 
-            <!-- Orientation Button -->
-            <Button
-                android:id="@+id/btn_canvas_orientation"
-                android:layout_width="0dp"
-                android:layout_height="38dp"
-                android:layout_weight="1"
-                android:text="Mode: Landscape"
-                android:textSize="11sp"
-                android:backgroundTint="#27272A"
-                android:textColor="#FFFFFF" />
+                <TextView
+                    android:id="@+id/tv_face_width_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="👤 Face Mask Width: 35%"
+                    android:textColor="#F87171"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+
+                <SeekBar
+                    android:id="@+id/seek_face_width"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:max="80"
+                    android:progress="35"
+                    android:progressTint="#EF4444"
+                    android:thumbTint="#EF4444" />
+            </LinearLayout>
         </LinearLayout>
 
-        <!-- Save & Apply to Shorts Bubble -->
+        <!-- Save & Apply Button -->
         <Button
             android:id="@+id/btn_apply_zones_to_bubble"
             android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:text="💾 Save &amp; Apply Zones to YouTube Shorts Bubble"
+            android:layout_height="42dp"
+            android:text="💾 Save Calibrated Orientation &amp; Zones to Shorts Bubble"
             android:backgroundTint="#10B981"
             android:textColor="#000000"
-            android:textSize="13sp"
+            android:textSize="12sp"
             android:textStyle="bold" />
 
     </LinearLayout>
 
-</RelativeLayout>
+</LinearLayout>

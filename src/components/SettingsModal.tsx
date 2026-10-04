@@ -11,9 +11,14 @@ import {
   Camera, 
   Keyboard, 
   Check,
-  Target
+  Target,
+  Hand,
+  ShieldAlert,
+  Scan,
+  Sparkles
 } from 'lucide-react';
 import { DeviceOrientation, GazeSettings } from '../types';
+import { GestureTestingCanvas } from './GestureTestingCanvas';
 
 interface Props {
   isOpen: boolean;
@@ -33,12 +38,26 @@ export const SettingsModal: React.FC<Props> = ({
   onClose,
 }) => {
   const [isResetDone, setIsResetDone] = React.useState(false);
+  const [isTestingCanvasOpen, setIsTestingCanvasOpen] = React.useState(false);
 
   const handleReset = () => {
     onResetCalibration();
     setIsResetDone(true);
     setTimeout(() => setIsResetDone(false), 2000);
   };
+
+  if (!isOpen) return null;
+
+  if (isTestingCanvasOpen) {
+    return (
+      <GestureTestingCanvas
+        settings={settings}
+        onUpdateSettings={onUpdateSettings}
+        onBackToSettings={() => setIsTestingCanvasOpen(false)}
+        onClose={onClose}
+      />
+    );
+  }
 
   const orientations: { id: DeviceOrientation; label: string; desc: string }[] = [
     { id: 'portrait', label: 'Vertical (Phone)', desc: 'Camera at top' },
@@ -170,6 +189,86 @@ export const SettingsModal: React.FC<Props> = ({
               <span>Relaxed (1s)</span>
             </div>
           </div>
+
+          {/* Hand Gesture Sensitivity Slider */}
+          <div className="space-y-1.5 p-3 rounded-2xl bg-neutral-800/40 border border-neutral-800/80">
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-1.5">
+                <Hand className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="text-neutral-200 font-semibold">Hand Gesture Sensitivity</span>
+              </div>
+              <span className="text-cyan-400 font-mono font-bold text-xs">
+                Level {settings.handGestureSensitivity ?? 6} / 10
+              </span>
+            </div>
+            <input
+              type="range"
+              min={1}
+              max={10}
+              step={1}
+              value={settings.handGestureSensitivity ?? 6}
+              onChange={(e) => onUpdateSettings({ handGestureSensitivity: Number(e.target.value) })}
+              className="w-full accent-cyan-400 bg-neutral-800 h-1.5 rounded-lg cursor-pointer"
+            />
+            <div className="flex justify-between text-[10px] text-neutral-400 pt-0.5">
+              <span>Firm (Close)</span>
+              <span>Balanced</span>
+              <span>Ultra Light (Low light / Distance)</span>
+            </div>
+            <p className="text-[10px] text-neutral-400 leading-tight pt-1">
+              Adjusts the motion threshold for hand swipes and palm pauses. Increase if gestures are missed in dim lighting or far from the camera; decrease if accidental triggers occur.
+            </p>
+          </div>
+
+          {/* Head Exclusion Zone (Spatial Mask) Slider */}
+          <div className="space-y-1.5 p-3 rounded-2xl bg-neutral-800/40 border border-neutral-800/80">
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-1.5">
+                <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+                <span className="text-neutral-200 font-semibold">Head Exclusion Zone (Spatial Mask)</span>
+              </div>
+              <span className="text-rose-400 font-mono font-bold text-xs">
+                Center {Math.round((settings.faceExclusionZoneWidth ?? 0.38) * 100)}% Masked
+              </span>
+            </div>
+            <input
+              type="range"
+              min={15}
+              max={70}
+              step={1}
+              value={Math.round((settings.faceExclusionZoneWidth ?? 0.38) * 100)}
+              onChange={(e) => onUpdateSettings({ faceExclusionZoneWidth: Number(e.target.value) / 100 })}
+              className="w-full accent-rose-400 bg-neutral-800 h-1.5 rounded-lg cursor-pointer"
+            />
+            <div className="flex justify-between text-[10px] text-neutral-400 pt-0.5">
+              <span>Narrow (15%)</span>
+              <span>Standard (38%)</span>
+              <span>Wide (70%)</span>
+            </div>
+            <p className="text-[10px] text-neutral-400 leading-tight pt-1">
+              Ignores the central region of the camera frame where your head and torso sit. Hand gestures will only be captured in the peripheral side zones, preventing head movements from causing false triggers.
+            </p>
+          </div>
+
+          {/* Launch Gesture Testing Canvas Button */}
+          <button
+            type="button"
+            onClick={() => setIsTestingCanvasOpen(true)}
+            className="w-full mt-1 p-3 rounded-2xl bg-gradient-to-r from-cyan-950/60 via-emerald-950/40 to-cyan-950/60 hover:from-cyan-900/60 hover:to-cyan-900/60 border border-cyan-500/40 text-white flex items-center justify-between transition-all group shadow-lg"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 rounded-xl bg-cyan-500/20 text-cyan-400 group-hover:scale-110 transition-transform">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div className="text-left">
+                <span className="font-semibold text-xs text-white block">Gesture Testing Canvas</span>
+                <span className="text-[10px] text-cyan-300/80">Split-screen live tracking &amp; touch-less air-draw</span>
+              </div>
+            </div>
+            <span className="text-[10px] font-semibold text-cyan-400 bg-cyan-500/10 px-2 py-1 rounded-lg border border-cyan-500/20">
+              Launch ➔
+            </span>
+          </button>
         </div>
 
         {/* Feedback Toggles */}
@@ -210,6 +309,30 @@ export const SettingsModal: React.FC<Props> = ({
               checked={settings.showPip}
               onChange={(e) => onUpdateSettings({ showPip: e.target.checked })}
               className="w-4 h-4 accent-emerald-500 rounded"
+            />
+          </label>
+
+          <label className="flex items-center justify-between p-2.5 rounded-xl bg-neutral-800/30 border border-neutral-800 cursor-pointer hover:bg-neutral-800/50 transition-colors">
+            <div className="flex items-center gap-2.5 text-xs text-neutral-200">
+              <Scan className="w-4 h-4 text-cyan-400" />
+              <div>
+                <span className="font-medium block">Vision Debug Overlay</span>
+                <span className="text-[10px] text-neutral-400">
+                  Draws real-time detection boxes for hand landmarks and spatial exclusion boundaries
+                </span>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={Boolean(settings.visionDebugOverlay)}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                onUpdateSettings({ 
+                  visionDebugOverlay: checked,
+                  ...(checked ? { showPip: true } : {})
+                });
+              }}
+              className="w-4 h-4 accent-cyan-400 rounded shrink-0"
             />
           </label>
         </div>

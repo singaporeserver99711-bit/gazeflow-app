@@ -71,7 +71,12 @@ public class FloatingEyeBubbleService extends Service {
     private String controlMode = "head"; // "head", "hand", "eye"
     private String deviceOrientation = "landscape"; // "landscape", "portrait"
     private boolean invertDirection = false;
-    private float faceZoneRatio = 0.38f; // Center 38% excluded for face
+    private int cameraRotation = 270;
+    private boolean swapAxes = true;
+    private boolean mirrorX = false;
+    private boolean invertY = false;
+    private float facePosX = 0.50f;
+    private float faceWidth = 0.35f;
     private int sensitivityLevel = 6; // 1 to 10
     private long cooldownMs = 800; // 400ms to 2000ms
     private int palmHoldThreshold = 3; // frames (150ms to 600ms)
@@ -218,7 +223,12 @@ public class FloatingEyeBubbleService extends Service {
         controlMode = prefs.getString("control_mode", "head");
         deviceOrientation = prefs.getString("device_orientation", "landscape");
         invertDirection = prefs.getBoolean("invert_direction", false);
-        faceZoneRatio = prefs.getFloat("face_zone_ratio", 0.38f);
+        cameraRotation = prefs.getInt("camera_rotation", 270);
+        swapAxes = prefs.getBoolean("swap_axes", true);
+        mirrorX = prefs.getBoolean("mirror_x", false);
+        invertY = prefs.getBoolean("invert_y", false);
+        facePosX = prefs.getFloat("face_pos_x", 0.50f);
+        faceWidth = prefs.getFloat("face_width", 0.35f);
 
         sensitivityLevel = prefs.getInt("sensitivity_level", 6); // 1 to 10
         cooldownMs = prefs.getInt("cooldown_ms", 800); // 400 to 2000
@@ -496,44 +506,50 @@ public class FloatingEyeBubbleService extends Service {
         int ambientAvg = ambientSum / 256;
         int noiseFloor = Math.max(12, ambientAvg / 14);
 
-        // Center exclusion columns (completely ignores head/face in center!)
-        int centerStartCol = (int) (16 * (0.5f - faceZoneRatio / 2f));
-        int centerEndCol = (int) (16 * (0.5f + faceZoneRatio / 2f));
+        // Face mask boundary in mapped screen space
+        float faceMinX = facePosX - (faceWidth / 2f);
+        float faceMaxX = facePosX + (faceWidth / 2f);
 
-        float leftWeightedY = 0, leftDiff = 0;
-        float rightWeightedY = 0, rightDiff = 0;
+        float weightedY = 0;
+        float totalDiff = 0;
         int activePixels = 0;
 
-        for (int y = 0; y < 16; y++) {
-            for (int x = 0; x < 16; x++) {
-                // COMPLETELY IGNORE CENTER FACE ZONE!
-                if (x >= centerStartCol && x <= centerEndCol) {
-                    continue;
-                }
-
-                int diff = Math.abs(currentLuma[y * 16 + x] - prevLuma[y * 16 + x]);
+        for (int rawY = 0; rawY < 16; rawY++) {
+            for (int rawX = 0; rawX < 16; rawX++) {
+                int diff = Math.abs(currentLuma[rawY * 16 + rawX] - prevLuma[rawY * 16 + rawX]);
                 if (diff > noiseFloor) {
-                    activePixels++;
-                    if (x < centerStartCol) {
-                        leftDiff += diff;
-                        leftWeightedY += (y * diff);
-                    } else {
-                        rightDiff += diff;
-                        rightWeightedY += (y * diff);
+                    float mappedX = rawX / 15.0f;
+                    float mappedY = rawY / 15.0f;
+
+                    if (swapAxes) {
+                        float temp = mappedX;
+                        mappedX = mappedY;
+                        mappedY = temp;
                     }
+                    if (mirrorX) {
+                        mappedX = 1.0f - mappedX;
+                    }
+                    if (invertY) {
+                        mappedY = 1.0f - mappedY;
+                    }
+
+                    // COMPLETELY IGNORE CENTER FACE ZONE!
+                    if (mappedX >= faceMinX && mappedX <= faceMaxX) {
+                        continue;
+                    }
+
+                    activePixels++;
+                    totalDiff += diff;
+                    weightedY += (mappedY * diff);
                 }
             }
         }
         prevLuma = currentLuma;
 
-        float dominantDiff = Math.max(leftDiff, rightDiff);
-        boolean isLeft = (leftDiff > rightDiff);
-        float dominantWeightedY = isLeft ? leftWeightedY : rightWeightedY;
-
         // Dynamic sensitivity scaling from Level 1 to 10
-        float minEnergyRequired = Math.max(120.0f, 380.0f - (sensitivityLevel * 25.0f));
+        float minEnergyRequired = Math.max(110.0f, 360.0f - (sensitivityLevel * 25.0f));
 
-        if (dominantDiff < minEnergyRequired) {
+        if (totalDiff < minEnergyRequired) {
             if (currentTime - centroidStartTime > 450) {
                 prevCentroidY = -1;
             }
@@ -541,7 +557,7 @@ public class FloatingEyeBubbleService extends Service {
             return;
         }
 
-        // --- 1. OPEN PALM DETECTION (High coverage in active side zone + Steady dwell) ---
+        // --- 1. OPEN PALM DETECTION (High coverage outside face box + Steady dwell) ---
         if (activePixels > 45) {
             palmSteadyFrames++;
             if (palmSteadyFrames >= palmHoldThreshold) {
@@ -559,7 +575,7 @@ public class FloatingEyeBubbleService extends Service {
         }
 
         // --- 2. TRAJECTORY FLICK UP / DOWN ---
-        float currentCentroidY = (dominantWeightedY / dominantDiff) / 15.0f; // Normalized 0.0 (top) to 1.0 (bottom)
+        float currentCentroidY = weightedY / totalDiff; // 0.0 (top) to 1.0 (bottom)
 
         if (prevCentroidY < 0) {
             prevCentroidY = currentCentroidY;

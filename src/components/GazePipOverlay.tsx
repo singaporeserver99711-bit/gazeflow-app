@@ -73,6 +73,86 @@ export const GazePipOverlay: React.FC<Props> = ({
         // Dark tint
         ctx.fillStyle = 'rgba(10, 10, 12, 0.35)';
         ctx.fillRect(0, 0, w, h);
+
+        // Draw Spatial Mask Exclusion Zone (Center Head Mask)
+        const maskRatio = Math.max(0.15, Math.min(0.70, settings.faceExclusionZoneWidth ?? 0.38));
+        const maskW = w * maskRatio;
+        const maskX = (w - maskW) / 2;
+
+        const isVisionDebug = Boolean(settings.visionDebugOverlay);
+
+        // Faint red exclusion tint (more prominent in debug mode)
+        ctx.fillStyle = isVisionDebug ? 'rgba(239, 68, 68, 0.22)' : 'rgba(239, 68, 68, 0.12)';
+        ctx.fillRect(maskX, 0, maskW, h);
+
+        // Dashed border lines
+        ctx.strokeStyle = isVisionDebug ? '#ef4444' : 'rgba(239, 68, 68, 0.45)';
+        ctx.lineWidth = isVisionDebug ? 2 : 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(maskX, 0);
+        ctx.lineTo(maskX, h);
+        ctx.moveTo(maskX + maskW, 0);
+        ctx.lineTo(maskX + maskW, h);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        if (isVisionDebug) {
+          // Label inside head exclusion zone
+          ctx.fillStyle = '#f87171';
+          ctx.font = 'bold 9px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('HEAD EXCLUSION (IGNORED)', maskX + maskW / 2, 12);
+
+          if (gazeData?.handDebug?.headInMaskDetected) {
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.9)';
+            ctx.fillText('👤 Head Motion Muted', maskX + maskW / 2, h / 2);
+          }
+
+          // Side Zone Labels
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = '8px sans-serif';
+          ctx.fillText('LEFT ZONE', maskX / 2, 12);
+          ctx.fillText('RIGHT ZONE', maskX + maskW + (w - (maskX + maskW)) / 2, 12);
+
+          // Draw Real-time Hand Detection Box
+          if (gazeData?.handDebug?.activeHandDetected) {
+            const hx = gazeData.handDebug.handCentroidX * w;
+            const hy = gazeData.handDebug.handCentroidY * h;
+            const boxSize = 34;
+
+            // Detection Box
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(hx - boxSize / 2, hy - boxSize / 2, boxSize, boxSize);
+
+            // Corner brackets
+            ctx.strokeStyle = '#34d399';
+            ctx.lineWidth = 2.5;
+            const bl = 6;
+            // Top-left
+            ctx.beginPath(); ctx.moveTo(hx - boxSize/2, hy - boxSize/2 + bl); ctx.lineTo(hx - boxSize/2, hy - boxSize/2); ctx.lineTo(hx - boxSize/2 + bl, hy - boxSize/2); ctx.stroke();
+            // Top-right
+            ctx.beginPath(); ctx.moveTo(hx + boxSize/2 - bl, hy - boxSize/2); ctx.lineTo(hx + boxSize/2, hy - boxSize/2); ctx.lineTo(hx + boxSize/2, hy - boxSize/2 + bl); ctx.stroke();
+            // Bottom-left
+            ctx.beginPath(); ctx.moveTo(hx - boxSize/2, hy + boxSize/2 - bl); ctx.lineTo(hx - boxSize/2, hy + boxSize/2); ctx.lineTo(hx - boxSize/2 + bl, hy + boxSize/2); ctx.stroke();
+            // Bottom-right
+            ctx.beginPath(); ctx.moveTo(hx + boxSize/2 - bl, hy + boxSize/2); ctx.lineTo(hx + boxSize/2, hy + boxSize/2); ctx.lineTo(hx + boxSize/2, hy + boxSize/2 - bl); ctx.stroke();
+
+            // Centroid Dot
+            ctx.fillStyle = '#10b981';
+            ctx.beginPath();
+            ctx.arc(hx, hy, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Label
+            ctx.fillStyle = '#10b981';
+            ctx.font = 'bold 8px monospace';
+            ctx.fillText('HAND DETECTED', hx, hy - boxSize / 2 - 3);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(`E:${gazeData.handDebug.motionEnergy}`, hx, hy + boxSize / 2 + 9);
+          }
+        }
       } else {
         // Simulation or waiting screen
         ctx.fillStyle = '#171717';
@@ -146,7 +226,7 @@ export const GazePipOverlay: React.FC<Props> = ({
   return (
     <div
       className={`fixed top-4 right-4 z-40 transition-all duration-300 ${
-        isMinimized ? 'w-12 h-12' : 'w-48 sm:w-56'
+        isMinimized ? 'w-12 h-12' : (settings.visionDebugOverlay ? 'w-60 sm:w-72' : 'w-48 sm:w-56')
       }`}
     >
       <div className="relative overflow-hidden rounded-2xl bg-neutral-900/95 border border-neutral-800 shadow-2xl backdrop-blur-md">
