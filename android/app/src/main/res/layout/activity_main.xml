@@ -1,82 +1,119 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:padding="24dp"
-    android:background="#121212">
+    android:background="#121212"
+    android:fillViewport="true">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="GazeFlow Hands-Free"
-        android:textColor="#FFFFFF"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="6dp" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Look UP to scroll YouTube Shorts.\nTap bubble to pause | Long-press to close."
-        android:textColor="#A0A0A0"
-        android:textSize="13sp"
-        android:gravity="center"
-        android:layout_marginBottom="24dp" />
-
-    <Button
-        android:id="@+id/btn_grant_overlay"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="1. Allow 'Display Over Other Apps'"
-        android:backgroundTint="#2E7D32"
-        android:textColor="#FFFFFF"
-        android:layout_marginBottom="10dp" />
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:gravity="center_horizontal">
 
-    <Button
-        android:id="@+id/btn_unlock_restricted"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="2. Fix 'Restricted setting' (App Info)"
-        android:backgroundTint="#6D28D9"
-        android:textColor="#FFFFFF"
-        android:layout_marginBottom="10dp" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="GazeFlow Controller"
+            android:textColor="#FFFFFF"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="4dp" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Tap 3 dots (⋮) in App Info > 'Allow restricted settings'"
-        android:textColor="#9CA3AF"
-        android:textSize="11sp"
-        android:layout_marginBottom="12dp" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hands-Free YouTube Shorts Scrolling"
+            android:textColor="#10B981"
+            android:textSize="14sp"
+            android:layout_marginBottom="24dp" />
 
-    <Button
-        android:id="@+id/btn_grant_accessibility"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="3. Turn ON Accessibility Service"
-        android:backgroundTint="#1976D2"
-        android:textColor="#FFFFFF"
-        android:layout_marginBottom="20dp" />
+        <!-- Status Card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#1E1E1E"
+            android:padding="16dp"
+            android:layout_marginBottom="20dp">
 
-    <Button
-        android:id="@+id/btn_start_bubble"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Start Floating Eye Bubble"
-        android:backgroundTint="#00C853"
-        android:textColor="#000000"
-        android:textStyle="bold"
-        android:layout_marginBottom="12dp" />
+            <TextView
+                android:id="@+id/tv_status_overlay"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="1. Appear on Top: Checking..."
+                android:textColor="#E0E0E0"
+                android:textSize="14sp"
+                android:layout_marginBottom="8dp" />
 
-    <Button
-        android:id="@+id/btn_stop_bubble"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Stop / Remove Floating Bubble"
-        android:backgroundTint="#DC2626"
-        android:textColor="#FFFFFF"
-        android:textStyle="bold" />
+            <TextView
+                android:id="@+id/tv_status_accessibility"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="2. Accessibility Service: Checking..."
+                android:textColor="#E0E0E0"
+                android:textSize="14sp" />
+        </LinearLayout>
 
-</LinearLayout>
+        <!-- Permission Buttons -->
+        <Button
+            android:id="@+id/btn_grant_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Grant 'Appear on top' Permission"
+            android:backgroundTint="#374151"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="12dp" />
+
+        <Button
+            android:id="@+id/btn_grant_accessibility"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Open Accessibility Settings"
+            android:backgroundTint="#374151"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="20dp" />
+
+        <!-- Action Buttons -->
+        <Button
+            android:id="@+id/btn_test_gesture"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="⚡ Test Swipe Gesture (Verify Service)"
+            android:backgroundTint="#2563EB"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp" />
+
+        <Button
+            android:id="@+id/btn_start_bubble"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="▶ Start Floating Bubble"
+            android:backgroundTint="#10B981"
+            android:textColor="#000000"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp" />
+
+        <Button
+            android:id="@+id/btn_stop_bubble"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="⏹ Stop / Remove Floating Bubble"
+            android:backgroundTint="#EF4444"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:layout_marginBottom="24dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="How to use:\n1. Tap 'Start Floating Bubble'\n2. Open YouTube Shorts\n3. Tap the floating eye bubble anytime to swipe to the next Short!\n4. Long-press the bubble to close it."
+            android:textColor="#9CA3AF"
+            android:textSize="12sp"
+            android:gravity="center" />
+
+    </LinearLayout>
+</ScrollView>

@@ -17,6 +17,14 @@ public class GazeAccessibilityService extends AccessibilityService {
     }
 
     @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (instance == this) {
+            instance = null;
+        }
+    }
+
+    @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {}
 
     @Override
@@ -29,10 +37,10 @@ public class GazeAccessibilityService extends AccessibilityService {
             float height = (float) metrics.heightPixels;
 
             Path swipePath = new Path();
-            swipePath.moveTo(width / 2f, height * 0.80f);
-            swipePath.lineTo(width / 2f, height * 0.20f);
+            swipePath.moveTo(width / 2f, height * 0.78f);
+            swipePath.lineTo(width / 2f, height * 0.22f);
 
-            GestureDescription.StrokeDescription stroke = new GestureDescription.StrokeDescription(swipePath, 0, 260);
+            GestureDescription.StrokeDescription stroke = new GestureDescription.StrokeDescription(swipePath, 0, 250);
             GestureDescription gesture = new GestureDescription.Builder().addStroke(stroke).build();
             dispatchGesture(gesture, null, null);
         }
@@ -48,7 +56,7 @@ public class GazeAccessibilityService extends AccessibilityService {
             swipePath.moveTo(width / 2f, height * 0.22f);
             swipePath.lineTo(width / 2f, height * 0.78f);
 
-            GestureDescription.StrokeDescription stroke = new GestureDescription.StrokeDescription(swipePath, 0, 260);
+            GestureDescription.StrokeDescription stroke = new GestureDescription.StrokeDescription(swipePath, 0, 250);
             GestureDescription gesture = new GestureDescription.Builder().addStroke(stroke).build();
             dispatchGesture(gesture, null, null);
         }
