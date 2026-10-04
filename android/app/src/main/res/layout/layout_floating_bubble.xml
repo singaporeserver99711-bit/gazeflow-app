@@ -1,10 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="56dp"
-    android:layout_height="56dp"
+    android:layout_width="64dp"
+    android:layout_height="64dp"
     android:background="@drawable/bubble_background"
     android:clickable="true"
     android:focusable="false">
+
+    <TextureView
+        android:id="@+id/camera_texture_view"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:layout_gravity="center"
+        android:alpha="0.75" />
 
     <ImageView
         android:id="@+id/bubble_icon"

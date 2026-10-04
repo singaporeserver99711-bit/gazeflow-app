@@ -2,42 +2,61 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#121212"
+    android:background="#0A0A0A"
     android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp"
-        android:gravity="center_horizontal">
+        android:padding="20dp"
+        android:maxWidth="640dp"
+        android:layout_gravity="center_horizontal">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="GazeFlow Controller"
-            android:textColor="#FFFFFF"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="4dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Hands-Free YouTube Shorts Scrolling"
-            android:textColor="#10B981"
-            android:textSize="14sp"
-            android:layout_marginBottom="24dp" />
-
-        <!-- Status Card -->
+        <!-- Header -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="#1E1E1E"
+            android:gravity="center"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="18dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="GazeFlow"
+                android:textColor="#FFFFFF"
+                android:textSize="26sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hands-Free Eye-Scroll Reels &amp; Shorts"
+                android:textColor="#10B981"
+                android:textSize="14sp"
+                android:layout_marginTop="2dp" />
+        </LinearLayout>
+
+        <!-- System Permission Diagnostics Card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_dark_card"
             android:padding="16dp"
-            android:layout_marginBottom="20dp">
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SYSTEM STATUS"
+                android:textColor="#9CA3AF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08"
+                android:layout_marginBottom="10dp" />
 
             <TextView
                 android:id="@+id/tv_status_overlay"
@@ -45,8 +64,8 @@
                 android:layout_height="wrap_content"
                 android:text="1. Appear on Top: Checking..."
                 android:textColor="#E0E0E0"
-                android:textSize="14sp"
-                android:layout_marginBottom="8dp" />
+                android:textSize="13sp"
+                android:layout_marginBottom="6dp" />
 
             <TextView
                 android:id="@+id/tv_status_accessibility"
@@ -54,66 +73,337 @@
                 android:layout_height="wrap_content"
                 android:text="2. Accessibility Service: Checking..."
                 android:textColor="#E0E0E0"
-                android:textSize="14sp" />
+                android:textSize="13sp"
+                android:layout_marginBottom="6dp" />
+
+            <TextView
+                android:id="@+id/tv_status_camera"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="3. Front Camera: Checking..."
+                android:textColor="#E0E0E0"
+                android:textSize="13sp"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Permission Action Bar -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:weightSum="3">
+
+                <Button
+                    android:id="@+id/btn_grant_camera"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_weight="1"
+                    android:text="Camera"
+                    android:textSize="11sp"
+                    android:backgroundTint="#27272A"
+                    android:textColor="#FFFFFF"
+                    android:layout_marginEnd="4dp" />
+
+                <Button
+                    android:id="@+id/btn_grant_overlay"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_weight="1"
+                    android:text="Overlay"
+                    android:textSize="11sp"
+                    android:backgroundTint="#27272A"
+                    android:textColor="#FFFFFF"
+                    android:layout_marginEnd="4dp" />
+
+                <Button
+                    android:id="@+id/btn_grant_accessibility"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_weight="1"
+                    android:text="Accessibility"
+                    android:textSize="11sp"
+                    android:backgroundTint="#27272A"
+                    android:textColor="#FFFFFF" />
+            </LinearLayout>
         </LinearLayout>
 
-        <!-- Permission Buttons -->
-        <Button
-            android:id="@+id/btn_grant_overlay"
+        <!-- Scroll Trigger Eye Movement (Look Up vs Look Down) -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Grant 'Appear on top' Permission"
-            android:backgroundTint="#374151"
-            android:textColor="#FFFFFF"
-            android:layout_marginBottom="12dp" />
+            android:orientation="vertical"
+            android:background="@drawable/bg_dark_card"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
 
-        <Button
-            android:id="@+id/btn_grant_accessibility"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Open Accessibility Settings"
-            android:backgroundTint="#374151"
-            android:textColor="#FFFFFF"
-            android:layout_marginBottom="20dp" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SCROLL TRIGGER EYE MOVEMENT"
+                android:textColor="#9CA3AF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08"
+                android:layout_marginBottom="12dp" />
 
-        <!-- Action Buttons -->
-        <Button
-            android:id="@+id/btn_test_gesture"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:weightSum="2">
+
+                <LinearLayout
+                    android:id="@+id/card_trigger_up"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_btn_active"
+                    android:padding="12dp"
+                    android:gravity="center"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_marginEnd="6dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="⬆ Look Up"
+                        android:textColor="#10B981"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Scroll to Next (Default)"
+                        android:textColor="#D1D5DB"
+                        android:textSize="10sp"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/card_trigger_down"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_btn_inactive"
+                    android:padding="12dp"
+                    android:gravity="center"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_marginStart="6dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="⬇ Look Down"
+                        android:textColor="#9CA3AF"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Scroll to Next"
+                        android:textColor="#9CA3AF"
+                        android:textSize="10sp"
+                        android:layout_marginTop="2dp" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Eye Gaze Sensitivity Slider -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="⚡ Test Swipe Gesture (Verify Service)"
-            android:backgroundTint="#2563EB"
-            android:textColor="#FFFFFF"
+            android:orientation="vertical"
+            android:background="@drawable/bg_dark_card"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Eye Gaze Sensitivity"
+                    android:textColor="#E5E7EB"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_sensitivity_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Level 2 / 5"
+                    android:textColor="#10B981"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <SeekBar
+                android:id="@+id/seek_sensitivity"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="4"
+                android:progress="1"
+                android:progressTint="#10B981"
+                android:thumbTint="#10B981" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="4dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Gentle head tilt"
+                    android:textColor="#6B7280"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Subtle eye movement"
+                    android:textColor="#6B7280"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Scroll Trigger Dwell Time Slider -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_dark_card"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Scroll Trigger Dwell Time"
+                    android:textColor="#E5E7EB"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_dwell_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="550ms"
+                    android:textColor="#10B981"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <SeekBar
+                android:id="@+id/seek_dwell"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="700"
+                android:progress="250"
+                android:progressTint="#10B981"
+                android:thumbTint="#10B981" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="4dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Fast (300ms)"
+                    android:textColor="#6B7280"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Relaxed (1s)"
+                    android:textColor="#6B7280"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Audio Sound Chimes Toggle -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@drawable/bg_dark_card"
+            android:padding="16dp"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="20dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="🔔 Audio Sound Chimes on Scroll &amp; Pause"
+                android:textColor="#E5E7EB"
+                android:textSize="13sp" />
+
+            <CheckBox
+                android:id="@+id/cb_audio_chimes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:buttonTint="#10B981" />
+        </LinearLayout>
+
+        <!-- Action Buttons Matching Web Style -->
+        <Button
+            android:id="@+id/btn_start_bubble"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="▶ Start Eye-Tracking Floating Bubble"
+            android:backgroundTint="#10B981"
+            android:textColor="#000000"
+            android:textSize="14sp"
             android:textStyle="bold"
             android:layout_marginBottom="12dp" />
 
         <Button
-            android:id="@+id/btn_start_bubble"
+            android:id="@+id/btn_test_gesture"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="▶ Start Floating Bubble"
-            android:backgroundTint="#10B981"
-            android:textColor="#000000"
+            android:layout_height="48dp"
+            android:text="⚡ Test Swipe Gesture (Verify Service)"
+            android:backgroundTint="#2563EB"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
             android:textStyle="bold"
             android:layout_marginBottom="12dp" />
 
         <Button
             android:id="@+id/btn_stop_bubble"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:text="⏹ Stop / Remove Floating Bubble"
-            android:backgroundTint="#EF4444"
+            android:backgroundTint="#DC2626"
             android:textColor="#FFFFFF"
+            android:textSize="13sp"
             android:textStyle="bold"
             android:layout_marginBottom="24dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="How to use:\n1. Tap 'Start Floating Bubble'\n2. Open YouTube Shorts\n3. Tap the floating eye bubble anytime to swipe to the next Short!\n4. Long-press the bubble to close it."
-            android:textColor="#9CA3AF"
-            android:textSize="12sp"
-            android:gravity="center" />
 
     </LinearLayout>
 </ScrollView>
