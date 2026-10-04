@@ -90,12 +90,14 @@ public class MainActivity extends AppCompatActivity {
         cardOrientLandscape.setOnClickListener(v -> {
             setOrientationUi(true);
             prefs.edit().putString("device_orientation", "landscape").apply();
-            Toast.makeText(this, "Landscape Tablet Mode selected (Camera rotated upright)", Toast.LENGTH_SHORT).show();
+            syncSettingsToService();
+            Toast.makeText(this, "Landscape Tablet Mode (Camera rotated upright)", Toast.LENGTH_SHORT).show();
         });
 
         cardOrientPortrait.setOnClickListener(v -> {
             setOrientationUi(false);
             prefs.edit().putString("device_orientation", "portrait").apply();
+            syncSettingsToService();
             Toast.makeText(this, "Portrait Vertical Mode selected", Toast.LENGTH_SHORT).show();
         });
 
@@ -106,23 +108,26 @@ public class MainActivity extends AppCompatActivity {
         cardModeHead.setOnClickListener(v -> {
             setModeUi("head");
             prefs.edit().putString("control_mode", "head").apply();
-            Toast.makeText(this, "Head Gesture Active: Nod UP for Next, DOWN for Prev", Toast.LENGTH_SHORT).show();
+            syncSettingsToService();
+            Toast.makeText(this, "Mode: 👤 Head Nod (Nod UP for Next, DOWN for Prev)", Toast.LENGTH_SHORT).show();
         });
 
         cardModeHand.setOnClickListener(v -> {
             setModeUi("hand");
             prefs.edit().putString("control_mode", "hand").apply();
-            Toast.makeText(this, "Hand Gesture Active: Wave/Fingers UP for Next, DOWN for Prev", Toast.LENGTH_SHORT).show();
+            syncSettingsToService();
+            Toast.makeText(this, "Mode: ✋ Hand & Palm (Wave UP=Next, DOWN=Prev, Hold Palm=Pause)", Toast.LENGTH_SHORT).show();
         });
 
         cardModeEye.setOnClickListener(v -> {
             setModeUi("eye");
             prefs.edit().putString("control_mode", "eye").apply();
-            Toast.makeText(this, "Eye Gaze Active: Glance UP to scroll", Toast.LENGTH_SHORT).show();
+            syncSettingsToService();
+            Toast.makeText(this, "Mode: 👁️ Eye Gaze (Glance UP to scroll)", Toast.LENGTH_SHORT).show();
         });
 
         // Sensitivity
-        int sensitivity = prefs.getInt("sensitivity_level", 3); // 1 to 5
+        int sensitivity = prefs.getInt("sensitivity_level", 3);
         seekSensitivity.setProgress(sensitivity - 1);
         tvSensitivityValue.setText("Level " + sensitivity + " / 5");
 
@@ -132,6 +137,7 @@ public class MainActivity extends AppCompatActivity {
                 int level = progress + 1;
                 tvSensitivityValue.setText("Level " + level + " / 5");
                 prefs.edit().putInt("sensitivity_level", level).apply();
+                syncSettingsToService();
             }
             @Override public void onStartTrackingTouch(SeekBar seekBar) {}
             @Override public void onStopTrackingTouch(SeekBar seekBar) {}
@@ -142,6 +148,7 @@ public class MainActivity extends AppCompatActivity {
         cbAudioChimes.setChecked(chimesEnabled);
         cbAudioChimes.setOnCheckedChangeListener((buttonView, isChecked) -> {
             prefs.edit().putBoolean("audio_chimes", isChecked).apply();
+            syncSettingsToService();
         });
 
         // Permission handlers
@@ -217,6 +224,14 @@ public class MainActivity extends AppCompatActivity {
         // Request camera permission on launch if needed
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, CAMERA_PERMISSION_CODE);
+        }
+    }
+
+    private void syncSettingsToService() {
+        if (FloatingEyeBubbleService.isRunning) {
+            Intent intent = new Intent(this, FloatingEyeBubbleService.class);
+            intent.setAction(FloatingEyeBubbleService.ACTION_UPDATE_SETTINGS);
+            startService(intent);
         }
     }
 

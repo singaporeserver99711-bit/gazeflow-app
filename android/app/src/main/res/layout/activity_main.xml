@@ -310,7 +310,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Fingers UP=Next\nDOWN=Prev"
+                        android:text="Wave UP/DOWN\nPalm = Pause"
                         android:textColor="#9CA3AF"
                         android:textSize="9sp"
                         android:gravity="center"
